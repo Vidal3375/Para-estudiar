@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro</title>
+<meta name="description" content="Temporizador Pomodoro simple, sin anuncios y sin registro. Funciona sin conexión.">
+<meta name="theme-color" content="#e35d4f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<script>
+try {
+  var s = JSON.parse(localStorage.getItem("pomodoro_state_v1_settings"));
+  if (s && s.theme && s.theme !== "auto") document.documentElement.dataset.theme = s.theme;
+} catch (e) {}
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f4f0;
+    --card: #fffdfb;
+    --text: #3a3532;
+    --muted: #8f8883;
+    --focus: #c9786b;
+    --focus-dim: #f5e3df;
+    --short: #5f9a8d;
+    --short-dim: #dfeee9;
+    --long: #7487c2;
+    --long-dim: #e3e8f5;
+    --border: #eee8e2;
+    --on-accent: #2b2523;
+    --shadow: 0 1px 2px rgba(0,0,0,0.03), 0 8px 24px rgba(60,40,30,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #1a1918;
+      --card: #232120;
+      --text: #e8e4e0;
+      --muted: #9a948e;
+      --focus: #e0a095;
+      --focus-dim: #35292a;
+      --short: #8fc2b5;
+      --short-dim: #232f2c;
+      --long: #a3b3e0;
+      --long-dim: #272b3a;
+      --border: #302d2b;
+      --on-accent: #231f1e;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    }
+  }
+
+  /* Temas: se activan con <html data-theme="..."> y ganan al modo automático */
+  :root[data-theme="forest"] {
+    color-scheme: light;
+    --bg: #f1f4ee; --card: #ffffff; --text: #263027; --muted: #758076;
+    --focus: #3f7d52; --focus-dim: #dcebdf;
+    --short: #9a7126; --short-dim: #f1e6cf;
+    --long: #4a7f90;  --long-dim: #dbe9ee;
+    --border: #e1e7dd; --on-accent: #ffffff;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(30,60,35,0.08);
+  }
+  :root[data-theme="ocean"] {
+    color-scheme: light;
+    --bg: #eef4f8; --card: #ffffff; --text: #1f2c38; --muted: #6a7f90;
+    --focus: #2b78b8; --focus-dim: #d6e7f4;
+    --short: #1f8a86; --short-dim: #d3ecea;
+    --long: #6a62c4;  --long-dim: #e3e0f6;
+    --border: #dde7ee; --on-accent: #ffffff;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(20,60,100,0.08);
+  }
+  :root[data-theme="lavender"] {
+    color-scheme: light;
+    --bg: #f5f2fa; --card: #ffffff; --text: #2d2840; --muted: #81799a;
+    --focus: #7a5cc4; --focus-dim: #e7def6;
+    --short: #b14d82; --short-dim: #f5dde9;
+    --long: #4a82c4;  --long-dim: #dce8f6;
+    --border: #e7e2f0; --on-accent: #ffffff;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(70,40,120,0.08);
+  }
+  :root[data-theme="sunset"] {
+    color-scheme: light;
+    --bg: #fbf1e8; --card: #fffaf5; --text: #3a2a22; --muted: #98806f;
+    --focus: #c9502a; --focus-dim: #f9ddd1;
+    --short: #a56a08; --short-dim: #f6e6c8;
+    --long: #a8476b;  --long-dim: #f1d9e2;
+    --border: #efe0d2; --on-accent: #ffffff;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(120,60,20,0.09);
+  }
+  :root[data-theme="night"] {
+    color-scheme: dark;
+    --bg: #0f1420; --card: #172033; --text: #e6ebf5; --muted: #8d9ab3;
+    --focus: #8fb4ff; --focus-dim: #1e2c4a;
+    --short: #6fd6c0; --short-dim: #173a3a;
+    --long: #c4a3ff;  --long-dim: #2c2450;
+    --border: #25304a; --on-accent: #0f1420;
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.45);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .app {
+    width: 100%;
+    max-width: 420px;
+  }
+  h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.02em;
+    margin: 0 0 20px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .session-btn {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--accent);
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: background 0.2s, color 0.2s, border-color 0.3s, transform 0.1s;
+  }
+  .session-btn:active { transform: scale(0.98); }
+  .session-btn[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .modes {
+    display: flex;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 4px;
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .mode-btn.active {
+    background: var(--accent-dim);
+    color: var(--text);
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .ring-wrap {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    margin-bottom: 24px;
+  }
+  svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--accent-dim); stroke-width: 10; }
+  .ring-fg {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+  .ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 28px;
+  }
+  .time {
+    font-size: 3rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .session-label {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .controls {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+  }
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s, background 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-secondary:hover { color: var(--text); }
+  .dots {
+    display: flex;
+    gap: 6px;
+    margin-top: 20px;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .dot.filled { background: var(--accent); }
+
+  .quote {
+    margin: 20px 0 0;
+    padding: 20px 22px 14px;
+    text-align: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+  }
+  .quote blockquote {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-size: 1.02rem;
+    line-height: 1.55;
+    transition: opacity 0.25s ease;
+  }
+  .quote figcaption {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    transition: opacity 0.25s ease;
+  }
+  .quote.fading blockquote,
+  .quote.fading figcaption { opacity: 0; }
+  .quote-next {
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.72rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .quote-next:hover { color: var(--text); }
+
+  .stats {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-num {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+  }
+  .history {
+    margin-top: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .history h2 {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 80px;
+  }
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 6px;
+  }
+  .bar {
+    width: 100%;
+    max-width: 22px;
+    border-radius: 4px 4px 0 0;
+    background: var(--focus);
+    min-height: 3px;
+    transition: height 0.3s;
+  }
+  .bar-day {
+    font-size: 0.62rem;
+    color: var(--muted);
+  }
+  .stat-btn {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.1s;
+  }
+  .stat-btn .stat-num, .stat-btn .stat-label { display: block; }
+  .stat-btn:hover { border-color: var(--muted); }
+  .stat-btn:active { transform: scale(0.97); }
+  .stat-btn[aria-expanded="true"] { border-color: var(--accent); }
+  .settings {
+    margin-top: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+    display: none;
+  }
+  .settings.open { display: block; }
+  .setting-title {
+    margin: 18px 0 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .setting-title:first-child { margin-top: 0; }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+  }
+  .setting-row label {
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+  .setting-row input[type="number"],
+  .setting-row select {
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+  .setting-row input[type="number"] { width: 60px; text-align: center; }
+  .setting-row select { max-width: 190px; }
+  .setting-row input[type="range"] { width: 150px; accent-color: var(--accent); }
+  .ghost-btn {
+    margin-top: 6px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  .ghost-btn:hover { color: var(--text); border-color: var(--muted); }
+  .reset-stats { margin-top: 18px; }
+  .reset-stats:hover { color: var(--focus); border-color: var(--focus); }
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding-top: 4px;
+  }
+  .theme-opt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-size: 0.74rem;
+    cursor: pointer;
+  }
+  .theme-opt[aria-pressed="true"] { border-color: var(--accent); }
+  .swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(128,128,128,0.35);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🍅 Pomodoro</h1>
+
+  <button class="session-btn" id="sessionBtn" aria-pressed="false">Inicio Sesión Pomodoro</button>
+
+  <div class="modes" id="modes">
+    <button class="mode-btn active" data-mode="focus">Enfoque</button>
+    <button class="mode-btn" data-mode="short">Descanso corto</button>
+    <button class="mode-btn" data-mode="long">Descanso largo</button>
+  </div>
+
+  <div class="card">
+    <div class="ring-wrap">
+      <svg width="260" height="260" viewBox="0 0 260 260">
+        <circle class="ring-bg" cx="130" cy="130" r="115"></circle>
+        <circle class="ring-fg" id="ring" cx="130" cy="130" r="115"></circle>
+      </svg>
+      <div class="ring-label">
+        <div class="time" id="time">25:00</div>
+        <div class="session-label" id="sessionLabel">Listo para enfocarte</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-secondary" id="resetBtn">Reiniciar</button>
+      <button class="btn btn-primary" id="startBtn">Iniciar</button>
+    </div>
+
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <figure class="quote" id="quote" aria-live="polite">
+    <blockquote id="quoteText"></blockquote>
+    <figcaption id="quoteAuthor"></figcaption>
+    <button class="quote-next" id="quoteNext">Otra cita</button>
+  </figure>
+
+  <div class="stats">
+    <div class="stat-box">
+      <div class="stat-num" id="todayCount">0</div>
+      <div class="stat-label">Hoy</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="totalCount">0</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <button class="stat-box stat-btn" id="settingsToggle" aria-expanded="false" aria-controls="settings">
+      <span class="stat-num" aria-hidden="true">⚙︎</span>
+      <span class="stat-label">Ajustes</span>
+    </button>
+  </div>
+
+  <div class="settings" id="settings">
+    <div class="setting-title">Sonido de aviso</div>
+    <div class="setting-row">
+      <label for="soundSelect">Sonido</label>
+      <select id="soundSelect"></select>
+    </div>
+    <div class="setting-row">
+      <label for="volumeRange">Volumen</label>
+      <input type="range" id="volumeRange" min="0" max="100" step="5" value="60">
+    </div>
+    <button class="ghost-btn" id="soundTest">Probar sonido</button>
+
+    <div class="setting-title">Tema</div>
+    <div class="theme-grid" id="themeGrid"></div>
+
+    <div class="setting-title">Duraciones</div>
+    <div class="setting-row">
+      <label for="focusMin">Enfoque (min)</label>
+      <input type="number" id="focusMin" min="1" max="120" value="25">
+    </div>
+    <div class="setting-row">
+      <label for="shortMin">Descanso corto (min)</label>
+      <input type="number" id="shortMin" min="1" max="60" value="5">
+    </div>
+    <div class="setting-row">
+      <label for="longMin">Descanso largo (min)</label>
+      <input type="number" id="longMin" min="1" max="60" value="15">
+    </div>
+    <div class="setting-row">
+      <label for="cycleCount">Pomodoros antes de descanso largo</label>
+      <input type="number" id="cycleCount" min="2" max="8" value="4">
+    </div>
+
+    <button class="ghost-btn reset-stats" id="resetStats">Borrar historial y estadísticas</button>
+  </div>
+
+  <div class="history">
+    <h2>Últimos 7 días</h2>
+    <div class="bars" id="bars"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  const STORAGE_KEY = "pomodoro_state_v1";
+  const HISTORY_KEY = "pomodoro_history_v1";
+
+  const modeConfig = {
+    focus:  { label: "Concéntrate",        accent: "--focus",  accentDim: "--focus-dim" },
+    short:  { label: "Descanso corto",     accent: "--short",  accentDim: "--short-dim" },
+    long:   { label: "Descanso largo",     accent: "--long",   accentDim: "--long-dim" }
+  };
+
+  const THEMES = [
+    { id: "auto",     name: "Automático", swatch: "linear-gradient(135deg, #f7f4f0 50%, #c9786b 50%)" },
+    { id: "forest",   name: "Bosque",     swatch: "linear-gradient(135deg, #f1f4ee 50%, #3f7d52 50%)" },
+    { id: "ocean",    name: "Océano",     swatch: "linear-gradient(135deg, #eef4f8 50%, #2b78b8 50%)" },
+    { id: "lavender", name: "Lavanda",    swatch: "linear-gradient(135deg, #f5f2fa 50%, #7a5cc4 50%)" },
+    { id: "sunset",   name: "Atardecer",  swatch: "linear-gradient(135deg, #fbf1e8 50%, #c9502a 50%)" },
+    { id: "night",    name: "Noche",      swatch: "linear-gradient(135deg, #0f1420 50%, #8fb4ff 50%)" }
+  ];
+
+  // Citas: traducciones propias y breves de textos clásicos sobre silencio, atención, constancia y humildad.
+  const QUOTES = [
+    { text: "Quien sabe no habla; quien habla no sabe.", author: "Lao Tse", source: "Tao Te Ching, 56" },
+    { text: "Un viaje de mil millas comienza con un solo paso.", author: "Lao Tse", source: "Tao Te Ching, 64" },
+    { text: "Si quieres progresar, conténtate con que te tengan por necio e ignorante en las cosas externas.", author: "Epicteto", source: "Enquiridión, 13" },
+    { text: "No está en ninguna parte quien está en todas partes.", author: "Séneca", source: "Cartas a Lucilio, II" },
+    { text: "Retírate en ti mismo todo lo que puedas.", author: "Séneca", source: "Cartas a Lucilio, VII" },
+    { text: "No es que tengamos poco tiempo, sino que perdemos mucho.", author: "Séneca", source: "Sobre la brevedad de la vida, I" },
+    { text: "En ningún lugar encuentra el hombre un retiro más tranquilo y sereno que en su propia alma.", author: "Marco Aurelio", source: "Meditaciones, IV, 3" },
+    { text: "El alma se tiñe del color de sus pensamientos.", author: "Marco Aurelio", source: "Meditaciones, V, 16" },
+    { text: "Haz cada acto de tu vida como si fuera el último.", author: "Marco Aurelio", source: "Meditaciones, II, 5" },
+    { text: "Practicando actos justos nos hacemos justos; practicando la templanza, templados.", author: "Aristóteles", source: "Ética a Nicómaco, II, 1" },
+    { text: "Yo, al menos, no creo saber lo que no sé.", author: "Sócrates", source: "en la Apología de Platón, 21d" },
+    { text: "Saber que sabes lo que sabes y que no sabes lo que no sabes: eso es el verdadero saber.", author: "Confucio", source: "Analectas, II, 17" },
+    { text: "Tenemos dos oídos y una sola boca para escuchar más y hablar menos.", author: "Zenón de Citio", source: "según Diógenes Laercio" },
+    { text: "La gota perfora la piedra, no por su fuerza, sino por caer muchas veces.", author: "Ovidio", source: "Pónticas, IV, 10" },
+    { text: "Toda la desgracia de los hombres viene de una sola cosa: no saber permanecer en reposo en una habitación.", author: "Blaise Pascal", source: "Pensamientos" },
+    { text: "Mejor que mil palabras vacías es una sola palabra que trae la paz.", author: "Buda", source: "Dhammapada, 100" },
+    { text: "La mente precede a todas las acciones; ella las guía, ella las crea.", author: "Buda", source: "Dhammapada, 1" },
+    { text: "La atención es el camino hacia lo inmortal; la distracción, el camino hacia la muerte.", author: "Buda", source: "Dhammapada, 21" },
+    { text: "Con esfuerzo, atención, disciplina y dominio de sí, el sabio se hace una isla que ninguna inundación sumerge.", author: "Buda", source: "Dhammapada, 25" },
+    { text: "Dos cosas llenan el ánimo de admiración y respeto siempre nuevos: el cielo estrellado sobre mí y la ley moral en mí.", author: "Immanuel Kant", source: "Crítica de la razón práctica, Conclusión" },
+    { text: "¡Atrévete a saber! Ten el valor de servirte de tu propio entendimiento.", author: "Immanuel Kant", source: "¿Qué es la Ilustración?" },
+    { text: "Quien crea en Dios y en el Último Día, que hable bien o que calle.", author: "Mahoma", source: "hadiz de al-Bujari y Muslim" },
+    { text: "Las obras más queridas por Dios son las más constantes, aunque sean pequeñas.", author: "Mahoma", source: "hadiz de al-Bujari y Muslim" },
+    { text: "No entrará en el Paraíso quien tenga en el corazón el peso de un átomo de soberbia.", author: "Mahoma", source: "hadiz de Muslim" },
+    { text: "Cuando ores, entra en tu aposento, cierra la puerta y ora a tu Padre en lo secreto.", author: "Jesús de Nazaret", source: "Evangelio de Mateo, 6, 6" },
+    { text: "El que se enaltece será humillado, y el que se humilla será enaltecido.", author: "Jesús de Nazaret", source: "Evangelio de Mateo, 23, 12" },
+    { text: "Marta, Marta, andas inquieta y preocupada por muchas cosas, pero una sola es necesaria.", author: "Jesús de Nazaret", source: "Evangelio de Lucas, 10, 41-42" },
+    { text: "El que es fiel en lo poco, también es fiel en lo mucho.", author: "Jesús de Nazaret", source: "Evangelio de Lucas, 16, 10" },
+    { text: "Primero dite a ti mismo quién quieres ser; después haz lo que tengas que hacer.", author: "Epicteto", source: "Discursos, III, 23" },
+    { text: "La suprema bondad es como el agua: beneficia a todos sin competir y se queda en los lugares que los demás desprecian.", author: "Lao Tse", source: "Tao Te Ching, 8" },
+    { text: "Alcanza el vacío extremo; guarda la quietud con firmeza.", author: "Lao Tse", source: "Tao Te Ching, 16" },
+    { text: "Reclámate a ti mismo, y reúne y conserva el tiempo.", author: "Séneca", source: "Cartas a Lucilio, I" },
+    { text: "El hombre noble es lento al hablar y diligente al obrar.", author: "Confucio", source: "Analectas, IV, 24" }
+  ];
+
+  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "bell", volume: 60, theme: "auto" };
+
+  let settings = loadSettings();
+  let state = {
+    mode: "focus",
+    secondsLeft: settings.focusMin * 60,
+    totalSeconds: settings.focusMin * 60,
+    running: false,
+    completedInCycle: 0
+  };
+  let sessionActive = false;
+
+  let tickInterval = null;
+  let endTimestamp = null;
+
+  const timeEl = document.getElementById("time");
+  const sessionLabelEl = document.getElementById("sessionLabel");
+  const sessionBtn = document.getElementById("sessionBtn");
+  const startBtn = document.getElementById("startBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const ring = document.getElementById("ring");
+  const dotsEl = document.getElementById("dots");
+  const modesEl = document.getElementById("modes");
+  const settingsToggle = document.getElementById("settingsToggle");
+  const settingsEl = document.getElementById("settings");
+  const resetStatsBtn = document.getElementById("resetStats");
+  const focusMinInput = document.getElementById("focusMin");
+  const shortMinInput = document.getElementById("shortMin");
+  const longMinInput = document.getElementById("longMin");
+  const cycleCountInput = document.getElementById("cycleCount");
+  const soundSelect = document.getElementById("soundSelect");
+  const volumeRange = document.getElementById("volumeRange");
+  const soundTestBtn = document.getElementById("soundTest");
+  const themeGrid = document.getElementById("themeGrid");
+  const quoteEl = document.getElementById("quote");
+  const quoteTextEl = document.getElementById("quoteText");
+  const quoteAuthorEl = document.getElementById("quoteAuthor");
+  const quoteNextBtn = document.getElementById("quoteNext");
+
+  const RADIUS = 115;
+  const CIRC = 2 * Math.PI * RADIUS;
+  ring.style.strokeDasharray = CIRC;
+
+  const IDLE_LABELS = { focus: "Listo para enfocarte", short: "Momento de respirar", long: "Descanso largo" };
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY + "_settings");
+      if (raw) return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+    } catch (e) {}
+    return Object.assign({}, DEFAULT_SETTINGS);
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem(STORAGE_KEY + "_settings", JSON.stringify(settings));
+    } catch (e) {}
+  }
+
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return {};
+  }
+
+  function saveHistory(history) {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch (e) {}
+  }
+
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function recordCompletedFocus() {
+    const history = loadHistory();
+    const key = todayKey();
+    history[key] = (history[key] || 0) + 1;
+    saveHistory(history);
+    renderStats();
+  }
+
+  function renderStats() {
+    const history = loadHistory();
+    const key = todayKey();
+    const today = history[key] || 0;
+    let total = 0;
+    Object.keys(history).forEach(function(k) { total += history[k]; });
+
+    document.getElementById("todayCount").textContent = today;
+    document.getElementById("totalCount").textContent = total;
+
+    const barsEl = document.getElementById("bars");
+    barsEl.innerHTML = "";
+    const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const k = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      days.push({ key: k, count: history[k] || 0, dayName: dayNames[d.getDay()] });
+    }
+    const maxCount = Math.max(1, ...days.map(function(d) { return d.count; }));
+    days.forEach(function(d) {
+      const col = document.createElement("div");
+      col.className = "bar-col";
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      const heightPct = Math.max(4, Math.round((d.count / maxCount) * 100));
+      bar.style.height = heightPct + "%";
+      bar.title = d.count + " pomodoro(s)";
+      const label = document.createElement("div");
+      label.className = "bar-day";
+      label.textContent = d.dayName;
+      col.appendChild(bar);
+      col.appendChild(label);
+      barsEl.appendChild(col);
+    });
+  }
+
+  /* ---------- Citas ---------- */
+
+  let lastQuote = -1;
+
+  function pickQuote() {
+    let i;
+    do {
+      i = Math.floor(Math.random() * QUOTES.length);
+    } while (QUOTES.length > 1 && i === lastQuote);
+    lastQuote = i;
+    return QUOTES[i];
+  }
+
+  function paintQuote(q) {
+    quoteTextEl.textContent = "“" + q.text + "”";
+    quoteAuthorEl.textContent = "— " + q.author + ", " + q.source;
+  }
+
+  function showQuote(animate) {
+    const q = pickQuote();
+    if (!animate) { paintQuote(q); return; }
+    quoteEl.classList.add("fading");
+    setTimeout(function() {
+      paintQuote(q);
+      quoteEl.classList.remove("fading");
+    }, 250);
+  }
+
+  /* ---------- Sonidos ---------- */
+
+  let audioCtx = null;
+
+  function getAudio() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+
+  // Una nota con envolvente suave. partials: [razón, ganancia, desafinación en Hz]
+  function voice(ctx, out, o) {
+    const t0 = ctx.currentTime + o.at;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.exponentialRampToValueAtTime(o.peak, t0 + o.attack);
+    env.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    env.connect(out);
+
+    (o.partials || [[1, 1]]).forEach(function(p) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "sine";
+      if (o.glideFrom) {
+        osc.frequency.setValueAtTime(o.glideFrom * p[0], t0);
+        osc.frequency.exponentialRampToValueAtTime(o.freq * p[0], t0 + o.glide);
+      } else {
+        osc.frequency.setValueAtTime(o.freq * p[0] + (p[2] || 0), t0);
+      }
+      g.gain.value = p[1];
+      osc.connect(g);
+      g.connect(env);
+      if (o.vibrato) {
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+        lfo.frequency.value = 5;
+        lfoGain.gain.value = o.vibrato;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start(t0);
+        lfo.stop(t0 + o.dur + 0.1);
+      }
+      osc.start(t0);
+      osc.stop(t0 + o.dur + 0.1);
+    });
+  }
+
+  const SOUNDS = {
+    bell: {
+      name: "Campana suave",
+      play: function(ctx, out) {
+        voice(ctx, out, { freq: 523.25, at: 0,    dur: 2.6, peak: 0.2,  attack: 0.015, partials: [[1, 1], [2, 0.28], [3, 0.08]] });
+        voice(ctx, out, { freq: 783.99, at: 0.45, dur: 2.4, peak: 0.14, attack: 0.015, partials: [[1, 1], [2, 0.2]] });
+      }
+    },
+    bowl: {
+      name: "Cuenco tibetano",
+      play: function(ctx, out) {
+        voice(ctx, out, { freq: 196, at: 0, dur: 5, peak: 0.16, attack: 0.05, partials: [[1, 1], [1, 0.6, 1.8], [2.71, 0.3], [5.4, 0.08]] });
+      }
+    },
+    chime: {
+      name: "Carillón",
+      play: function(ctx, out) {
+        [523.25, 659.25, 783.99, 1046.5].forEach(function(f, i) {
+          voice(ctx, out, { freq: f, at: i * 0.2, dur: 1.7, peak: 0.2, attack: 0.01, partials: [[1, 1], [2, 0.12]] });
+        });
+      }
+    },
+    drop: {
+      name: "Gota de agua",
+      play: function(ctx, out) {
+        voice(ctx, out, { freq: 620, glideFrom: 1100, glide: 0.09, at: 0,    dur: 0.55, peak: 0.28, attack: 0.004 });
+        voice(ctx, out, { freq: 520, glideFrom: 900,  glide: 0.09, at: 0.55, dur: 0.55, peak: 0.16, attack: 0.004 });
+      }
+    },
+    flute: {
+      name: "Flauta suave",
+      play: function(ctx, out) {
+        voice(ctx, out, { freq: 392,    at: 0,   dur: 1.5, peak: 0.22, attack: 0.18, partials: [[1, 1], [2, 0.12]], vibrato: 3 });
+        voice(ctx, out, { freq: 587.33, at: 0.6, dur: 2.0, peak: 0.2,  attack: 0.2,  partials: [[1, 1], [2, 0.1]],  vibrato: 3 });
+      }
+    },
+    none: { name: "Sin sonido", play: null }
+  };
+
+  function playSound(id) {
+    const def = SOUNDS[id];
+    if (!def || !def.play) return;
+    try {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const v = Math.max(0, Math.min(100, settings.volume)) / 100;
+      const master = ctx.createGain();
+      master.gain.value = Math.pow(v, 1.3) * 1.3;
+      const soften = ctx.createBiquadFilter();
+      soften.type = "lowpass";
+      soften.frequency.value = 3200;
+      soften.connect(master);
+      master.connect(ctx.destination);
+      def.play(ctx, soften);
+    } catch (e) {}
+  }
+
+  /* ---------- Temas ---------- */
+
+  function applyTheme(id) {
+    if (id === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.dataset.theme = id;
+
+    themeGrid.querySelectorAll(".theme-opt").forEach(function(btn) {
+      btn.setAttribute("aria-pressed", String(btn.dataset.theme === id));
+    });
+
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#f7f5f2");
+  }
+
+  function buildThemeGrid() {
+    THEMES.forEach(function(t) {
+      const btn = document.createElement("button");
+      btn.className = "theme-opt";
+      btn.dataset.theme = t.id;
+      btn.setAttribute("aria-pressed", "false");
+      btn.setAttribute("aria-label", "Tema " + t.name);
+      const sw = document.createElement("span");
+      sw.className = "swatch";
+      sw.style.background = t.swatch;
+      const name = document.createElement("span");
+      name.textContent = t.name;
+      btn.appendChild(sw);
+      btn.appendChild(name);
+      themeGrid.appendChild(btn);
+    });
+  }
+
+  function buildSoundSelect() {
+    Object.keys(SOUNDS).forEach(function(id) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = SOUNDS[id].name;
+      soundSelect.appendChild(opt);
+    });
+  }
+
+  /* ---------- Temporizador ---------- */
+
+  function minutesFor(mode) {
+    return mode === "focus" ? settings.focusMin : mode === "short" ? settings.shortMin : settings.longMin;
+  }
+
+  function phaseLabel() {
+    let label = modeConfig[state.mode].label;
+    if (sessionActive && state.mode === "focus") {
+      label += " · " + (state.completedInCycle + 1) + " de " + settings.cycleCount;
+    }
+    return label;
+  }
+
+  function setMode(mode, resetTimer) {
+    state.mode = mode;
+    if (resetTimer !== false) {
+      state.secondsLeft = minutesFor(mode) * 60;
+      state.totalSeconds = minutesFor(mode) * 60;
+    }
+    document.documentElement.style.setProperty("--accent", "var(" + modeConfig[mode].accent + ")");
+    document.documentElement.style.setProperty("--accent-dim", "var(" + modeConfig[mode].accentDim + ")");
+
+    document.querySelectorAll(".mode-btn").forEach(function(btn) {
+      btn.classList.toggle("active", btn.dataset.mode === mode);
+    });
+
+    sessionLabelEl.textContent = state.running ? phaseLabel() : IDLE_LABELS[mode];
+
+    renderDots();
+    renderTime();
+  }
+
+  function renderDots() {
+    dotsEl.innerHTML = "";
+    const count = settings.cycleCount;
+    for (let i = 0; i < count; i++) {
+      const dot = document.createElement("div");
+      dot.className = "dot" + (i < state.completedInCycle ? " filled" : "");
+      dotsEl.appendChild(dot);
+    }
+  }
+
+  function formatTime(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  function renderTime() {
+    timeEl.textContent = formatTime(Math.max(0, state.secondsLeft));
+    const progress = state.totalSeconds > 0 ? (state.totalSeconds - state.secondsLeft) / state.totalSeconds : 0;
+    const offset = CIRC * (1 - progress);
+    ring.style.strokeDashoffset = offset;
+  }
+
+  function tick() {
+    const now = Date.now();
+    const remainingMs = endTimestamp - now;
+    state.secondsLeft = Math.max(0, Math.round(remainingMs / 1000));
+    renderTime();
+    if (state.secondsLeft <= 0) {
+      completeSession();
+    }
+  }
+
+  function start() {
+    if (state.running) return;
+    getAudio();
+    state.running = true;
+    endTimestamp = Date.now() + state.secondsLeft * 1000;
+    tickInterval = setInterval(tick, 250);
+    startBtn.textContent = "Pausar";
+    sessionLabelEl.textContent = phaseLabel();
+    maybeRequestNotifications();
+  }
+
+  function pause() {
+    state.running = false;
+    clearInterval(tickInterval);
+    tickInterval = null;
+    startBtn.textContent = "Continuar";
+    sessionLabelEl.textContent = "Pausado";
+  }
+
+  function resetCurrent() {
+    pause();
+    state.secondsLeft = minutesFor(state.mode) * 60;
+    state.totalSeconds = minutesFor(state.mode) * 60;
+    startBtn.textContent = "Iniciar";
+    sessionLabelEl.textContent = IDLE_LABELS[state.mode];
+    renderTime();
+  }
+
+  function setSessionActive(active) {
+    sessionActive = active;
+    sessionBtn.setAttribute("aria-pressed", String(active));
+    sessionBtn.textContent = active ? "Detener sesión" : "Inicio Sesión Pomodoro";
+  }
+
+  function startSession() {
+    pause();
+    state.completedInCycle = 0;
+    setSessionActive(true);
+    setMode("focus");
+    start();
+  }
+
+  function stopSession() {
+    pause();
+    setSessionActive(false);
+    state.completedInCycle = 0;
+    setMode("focus");
+    startBtn.textContent = "Iniciar";
+    sessionLabelEl.textContent = IDLE_LABELS.focus;
+  }
+
+  function completeSession() {
+    clearInterval(tickInterval);
+    tickInterval = null;
+    state.running = false;
+    startBtn.textContent = "Iniciar";
+    playSound(settings.sound);
+    showQuote(true);
+
+    if (state.mode === "focus") {
+      recordCompletedFocus();
+      state.completedInCycle++;
+      if (state.completedInCycle >= settings.cycleCount) {
+        state.completedInCycle = 0;
+        notify("¡Pomodoro completado!", "Hora de un descanso largo.");
+        setMode("long");
+      } else {
+        notify("¡Pomodoro completado!", "Hora de un descanso corto.");
+        setMode("short");
+      }
+      if (sessionActive) start();
+      return;
+    }
+
+    if (state.mode === "long" && sessionActive) {
+      setSessionActive(false);
+      setMode("focus");
+      sessionLabelEl.textContent = "Sesión completada";
+      notify("Sesión completada", "Has terminado el ciclo completo. ¡Buen trabajo!");
+      return;
+    }
+
+    notify("Descanso terminado", "Volvamos a enfocarnos.");
+    setMode("focus");
+    if (sessionActive) start();
+  }
+
+  function maybeRequestNotifications() {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }
+
+  function notify(title, body) {
+    if ("Notification" in window && Notification.permission === "granted") {
+      try { new Notification(title, { body: body }); } catch (e) {}
+    }
+  }
+
+  /* ---------- Eventos ---------- */
+
+  sessionBtn.addEventListener("click", function() {
+    if (sessionActive) stopSession();
+    else startSession();
+  });
+
+  startBtn.addEventListener("click", function() {
+    if (state.running) pause();
+    else start();
+  });
+
+  resetBtn.addEventListener("click", resetCurrent);
+
+  modesEl.addEventListener("click", function(e) {
+    const btn = e.target.closest(".mode-btn");
+    if (!btn) return;
+    setSessionActive(false);
+    pause();
+    startBtn.textContent = "Iniciar";
+    setMode(btn.dataset.mode);
+  });
+
+  quoteNextBtn.addEventListener("click", function() { showQuote(true); });
+
+  settingsToggle.addEventListener("click", function() {
+    const open = settingsEl.classList.toggle("open");
+    settingsToggle.setAttribute("aria-expanded", String(open));
+  });
+
+  soundSelect.addEventListener("change", function() {
+    settings.sound = soundSelect.value;
+    saveSettings();
+    playSound(settings.sound);
+  });
+
+  volumeRange.addEventListener("input", function() {
+    settings.volume = parseInt(volumeRange.value, 10);
+  });
+
+  volumeRange.addEventListener("change", function() {
+    settings.volume = parseInt(volumeRange.value, 10);
+    saveSettings();
+    playSound(settings.sound);
+  });
+
+  soundTestBtn.addEventListener("click", function() { playSound(settings.sound); });
+
+  themeGrid.addEventListener("click", function(e) {
+    const btn = e.target.closest(".theme-opt");
+    if (!btn) return;
+    settings.theme = btn.dataset.theme;
+    saveSettings();
+    applyTheme(settings.theme);
+  });
+
+  function applySettingsFromInputs() {
+    settings.focusMin = Math.max(1, parseInt(focusMinInput.value, 10) || 25);
+    settings.shortMin = Math.max(1, parseInt(shortMinInput.value, 10) || 5);
+    settings.longMin = Math.max(1, parseInt(longMinInput.value, 10) || 15);
+    settings.cycleCount = Math.max(2, parseInt(cycleCountInput.value, 10) || 4);
+    saveSettings();
+    if (!state.running) {
+      setMode(state.mode);
+    } else {
+      renderDots();
+    }
+  }
+
+  [focusMinInput, shortMinInput, longMinInput, cycleCountInput].forEach(function(input) {
+    input.addEventListener("change", applySettingsFromInputs);
+  });
+
+  resetStatsBtn.addEventListener("click", function() {
+    if (confirm("¿Borrar todo el historial y las estadísticas? Esta acción no se puede deshacer.")) {
+      saveHistory({});
+      renderStats();
+    }
+  });
+
+  /* ---------- Arranque ---------- */
+
+  focusMinInput.value = settings.focusMin;
+  shortMinInput.value = settings.shortMin;
+  longMinInput.value = settings.longMin;
+  cycleCountInput.value = settings.cycleCount;
+
+  buildSoundSelect();
+  buildThemeGrid();
+  if (!SOUNDS[settings.sound]) settings.sound = DEFAULT_SETTINGS.sound;
+  soundSelect.value = settings.sound;
+  volumeRange.value = settings.volume;
+  applyTheme(THEMES.some(function(t) { return t.id === settings.theme; }) ? settings.theme : "auto");
+
+  setMode("focus", true);
+  renderStats();
+  showQuote(false);
+
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function() {});
+  }
+})();
+</script>
+</body>
+</html>
