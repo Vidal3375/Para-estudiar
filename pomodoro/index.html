@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pomodoro</title>
 <meta name="description" content="Temporizador Pomodoro simple, sin anuncios y sin registro. Funciona sin conexión.">
-<meta name="theme-color" content="#e35d4f">
+<meta name="theme-color" content="#f8f6f3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -16,86 +16,87 @@ try {
 } catch (e) {}
 </script>
 <style>
+  /* Paleta suave: acentos pastel poco saturados; el texto conserva contraste para leerse bien */
   :root {
     color-scheme: light;
-    --bg: #f7f4f0;
-    --card: #fffdfb;
-    --text: #3a3532;
-    --muted: #8f8883;
-    --focus: #c9786b;
-    --focus-dim: #f5e3df;
-    --short: #5f9a8d;
-    --short-dim: #dfeee9;
-    --long: #7487c2;
-    --long-dim: #e3e8f5;
-    --border: #eee8e2;
-    --on-accent: #2b2523;
-    --shadow: 0 1px 2px rgba(0,0,0,0.03), 0 8px 24px rgba(60,40,30,0.05);
+    --bg: #f8f6f3;
+    --card: #fdfcfa;
+    --text: #4a4542;
+    --muted: #8a8581;
+    --focus: #dcb0a7;
+    --focus-dim: #f5ebe8;
+    --short: #afcdc2;
+    --short-dim: #ebf3f0;
+    --long: #b8c3de;
+    --long-dim: #eef1f7;
+    --border: #eeeae5;
+    --on-accent: #3d3734;
+    --shadow: 0 1px 2px rgba(0,0,0,0.02), 0 8px 24px rgba(60,40,30,0.04);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
-      --bg: #1a1918;
-      --card: #232120;
-      --text: #e8e4e0;
-      --muted: #9a948e;
-      --focus: #e0a095;
-      --focus-dim: #35292a;
-      --short: #8fc2b5;
-      --short-dim: #232f2c;
-      --long: #a3b3e0;
-      --long-dim: #272b3a;
-      --border: #302d2b;
-      --on-accent: #231f1e;
-      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
+      --bg: #1c1b1a;
+      --card: #242322;
+      --text: #e4e0dc;
+      --muted: #9b9590;
+      --focus: #c9a39c;
+      --focus-dim: #2f2827;
+      --short: #a0bdb3;
+      --short-dim: #252d2a;
+      --long: #a9b3cc;
+      --long-dim: #282b33;
+      --border: #312f2d;
+      --on-accent: #1f1d1c;
+      --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.3);
     }
   }
 
   /* Temas: se activan con <html data-theme="..."> y ganan al modo automático */
   :root[data-theme="forest"] {
     color-scheme: light;
-    --bg: #f1f4ee; --card: #ffffff; --text: #263027; --muted: #758076;
-    --focus: #3f7d52; --focus-dim: #dcebdf;
-    --short: #9a7126; --short-dim: #f1e6cf;
-    --long: #4a7f90;  --long-dim: #dbe9ee;
-    --border: #e1e7dd; --on-accent: #ffffff;
-    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(30,60,35,0.08);
+    --bg: #f3f5f1; --card: #fbfcfa; --text: #3a4540; --muted: #7c877f;
+    --focus: #a8c4ad; --focus-dim: #e8f0e9;
+    --short: #d8c8a2; --short-dim: #f5f0e4;
+    --long: #aac4cc;  --long-dim: #e9f0f2;
+    --border: #e4e9e1; --on-accent: #2c3630;
+    --shadow: 0 1px 2px rgba(0,0,0,0.02), 0 8px 24px rgba(30,60,35,0.05);
   }
   :root[data-theme="ocean"] {
     color-scheme: light;
-    --bg: #eef4f8; --card: #ffffff; --text: #1f2c38; --muted: #6a7f90;
-    --focus: #2b78b8; --focus-dim: #d6e7f4;
-    --short: #1f8a86; --short-dim: #d3ecea;
-    --long: #6a62c4;  --long-dim: #e3e0f6;
-    --border: #dde7ee; --on-accent: #ffffff;
-    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(20,60,100,0.08);
+    --bg: #f1f5f8; --card: #fbfcfd; --text: #34424d; --muted: #7a8a97;
+    --focus: #a9c6dd; --focus-dim: #e7eff6;
+    --short: #a7d0cb; --short-dim: #e6f2f1;
+    --long: #c0bce0;  --long-dim: #efeef7;
+    --border: #e2e9ef; --on-accent: #26323c;
+    --shadow: 0 1px 2px rgba(0,0,0,0.02), 0 8px 24px rgba(20,60,100,0.05);
   }
   :root[data-theme="lavender"] {
     color-scheme: light;
-    --bg: #f5f2fa; --card: #ffffff; --text: #2d2840; --muted: #81799a;
-    --focus: #7a5cc4; --focus-dim: #e7def6;
-    --short: #b14d82; --short-dim: #f5dde9;
-    --long: #4a82c4;  --long-dim: #dce8f6;
-    --border: #e7e2f0; --on-accent: #ffffff;
-    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(70,40,120,0.08);
+    --bg: #f6f4f9; --card: #fcfbfd; --text: #403a4d; --muted: #8a849b;
+    --focus: #c6b9e0; --focus-dim: #f0ebf7;
+    --short: #e2bccd; --short-dim: #f8ecf2;
+    --long: #b5c8e2;  --long-dim: #eaf0f8;
+    --border: #e9e5f0; --on-accent: #2f2a3c;
+    --shadow: 0 1px 2px rgba(0,0,0,0.02), 0 8px 24px rgba(70,40,120,0.05);
   }
   :root[data-theme="sunset"] {
     color-scheme: light;
-    --bg: #fbf1e8; --card: #fffaf5; --text: #3a2a22; --muted: #98806f;
-    --focus: #c9502a; --focus-dim: #f9ddd1;
-    --short: #a56a08; --short-dim: #f6e6c8;
-    --long: #a8476b;  --long-dim: #f1d9e2;
-    --border: #efe0d2; --on-accent: #ffffff;
-    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(120,60,20,0.09);
+    --bg: #fbf6f0; --card: #fffcf8; --text: #4d3f37; --muted: #9a8a7e;
+    --focus: #e6bea9; --focus-dim: #f9ede5;
+    --short: #e2cfa4; --short-dim: #f7f1e3;
+    --long: #d8b5c2;  --long-dim: #f5eaee;
+    --border: #f0e6dc; --on-accent: #3a2c25;
+    --shadow: 0 1px 2px rgba(0,0,0,0.02), 0 8px 24px rgba(120,60,20,0.05);
   }
   :root[data-theme="night"] {
     color-scheme: dark;
-    --bg: #0f1420; --card: #172033; --text: #e6ebf5; --muted: #8d9ab3;
-    --focus: #8fb4ff; --focus-dim: #1e2c4a;
-    --short: #6fd6c0; --short-dim: #173a3a;
-    --long: #c4a3ff;  --long-dim: #2c2450;
-    --border: #25304a; --on-accent: #0f1420;
-    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.45);
+    --bg: #181b22; --card: #20242f; --text: #dde1ea; --muted: #8b93a6;
+    --focus: #a3b2d4; --focus-dim: #262c3a;
+    --short: #98c3b9; --short-dim: #212f2e;
+    --long: #bbaed4;  --long-dim: #2a2737;
+    --border: #2b303d; --on-accent: #181b22;
+    --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.3);
   }
 
   * { box-sizing: border-box; }
@@ -304,7 +305,7 @@ try {
   .stat-num {
     font-size: 1.6rem;
     font-weight: 700;
-    color: var(--accent);
+    color: var(--text);
   }
   .stat-label {
     font-size: 0.72rem;
@@ -559,12 +560,12 @@ try {
   };
 
   const THEMES = [
-    { id: "auto",     name: "Automático", swatch: "linear-gradient(135deg, #f7f4f0 50%, #c9786b 50%)" },
-    { id: "forest",   name: "Bosque",     swatch: "linear-gradient(135deg, #f1f4ee 50%, #3f7d52 50%)" },
-    { id: "ocean",    name: "Océano",     swatch: "linear-gradient(135deg, #eef4f8 50%, #2b78b8 50%)" },
-    { id: "lavender", name: "Lavanda",    swatch: "linear-gradient(135deg, #f5f2fa 50%, #7a5cc4 50%)" },
-    { id: "sunset",   name: "Atardecer",  swatch: "linear-gradient(135deg, #fbf1e8 50%, #c9502a 50%)" },
-    { id: "night",    name: "Noche",      swatch: "linear-gradient(135deg, #0f1420 50%, #8fb4ff 50%)" }
+    { id: "auto",     name: "Automático", swatch: "linear-gradient(135deg, #f8f6f3 50%, #dcb0a7 50%)" },
+    { id: "forest",   name: "Bosque",     swatch: "linear-gradient(135deg, #f3f5f1 50%, #a8c4ad 50%)" },
+    { id: "ocean",    name: "Océano",     swatch: "linear-gradient(135deg, #f1f5f8 50%, #a9c6dd 50%)" },
+    { id: "lavender", name: "Lavanda",    swatch: "linear-gradient(135deg, #f6f4f9 50%, #c6b9e0 50%)" },
+    { id: "sunset",   name: "Atardecer",  swatch: "linear-gradient(135deg, #fbf6f0 50%, #e6bea9 50%)" },
+    { id: "night",    name: "Noche",      swatch: "linear-gradient(135deg, #181b22 50%, #a3b2d4 50%)" }
   ];
 
   // Citas: traducciones propias y breves de textos clásicos sobre silencio, atención, constancia y humildad.
@@ -604,7 +605,7 @@ try {
     { text: "El hombre noble es lento al hablar y diligente al obrar.", author: "Confucio", source: "Analectas, IV, 24" }
   ];
 
-  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "bell", volume: 60, theme: "auto" };
+  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "gong", volume: 60, theme: "auto" };
 
   let settings = loadSettings();
   let state = {
@@ -757,8 +758,12 @@ try {
   }
 
   /* ---------- Sonidos ---------- */
+  // Síntesis que imita instrumentos reales: cada modo de vibración se apaga a su ritmo,
+  // los golpes llevan un ataque de ruido filtrado y todo pasa por una reverberación suave.
 
   let audioCtx = null;
+  let noiseBuf = null;
+  let reverbBuf = null;
 
   function getAudio() {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -768,77 +773,180 @@ try {
     return audioCtx;
   }
 
-  // Una nota con envolvente suave. partials: [razón, ganancia, desafinación en Hz]
-  function voice(ctx, out, o) {
-    const t0 = ctx.currentTime + o.at;
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0.0001, t0);
-    env.gain.exponentialRampToValueAtTime(o.peak, t0 + o.attack);
-    env.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
-    env.connect(out);
+  function rand(a, b) { return a + Math.random() * (b - a); }
 
-    (o.partials || [[1, 1]]).forEach(function(p) {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = "sine";
-      if (o.glideFrom) {
-        osc.frequency.setValueAtTime(o.glideFrom * p[0], t0);
-        osc.frequency.exponentialRampToValueAtTime(o.freq * p[0], t0 + o.glide);
-      } else {
-        osc.frequency.setValueAtTime(o.freq * p[0] + (p[2] || 0), t0);
+  function getNoise(ctx) {
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
+
+  // Respuesta de impulso de una sala: ruido estéreo que se apaga y se oscurece poco a poco
+  function getReverb(ctx) {
+    if (!reverbBuf) {
+      const len = Math.floor(ctx.sampleRate * 3);
+      reverbBuf = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = reverbBuf.getChannelData(ch);
+        let lp = 0;
+        for (let i = 0; i < len; i++) {
+          const t = i / len;
+          lp += (Math.random() * 2 - 1 - lp) * (0.6 - 0.5 * t);
+          d[i] = lp * Math.pow(1 - t, 3);
+        }
       }
-      g.gain.value = p[1];
-      osc.connect(g);
-      g.connect(env);
-      if (o.vibrato) {
-        const lfo = ctx.createOscillator();
-        const lfoGain = ctx.createGain();
-        lfo.frequency.value = 5;
-        lfoGain.gain.value = o.vibrato;
-        lfo.connect(lfoGain);
-        lfoGain.connect(osc.frequency);
-        lfo.start(t0);
-        lfo.stop(t0 + o.dur + 0.1);
-      }
-      osc.start(t0);
-      osc.stop(t0 + o.dur + 0.1);
-    });
+    }
+    return reverbBuf;
+  }
+
+  // Un modo de vibración: seno con ataque corto y caída exponencial (decay = constante de tiempo en s)
+  function partial(ctx, out, o) {
+    const t0 = ctx.currentTime + o.at;
+    const attack = o.attack || 0.004;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(o.from || o.freq, t0);
+    if (o.from) osc.frequency.exponentialRampToValueAtTime(o.freq, t0 + o.glide);
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.exponentialRampToValueAtTime(o.peak, t0 + attack);
+    env.gain.setTargetAtTime(0.0001, t0 + attack, o.decay);
+    osc.connect(env);
+    env.connect(out);
+    osc.start(t0);
+    osc.stop(t0 + attack + o.decay * 7);
+  }
+
+  // Ruido filtrado muy breve: el contacto de la maza, el nudillo o el palillo
+  function hit(ctx, out, o) {
+    const t0 = ctx.currentTime + o.at;
+    const src = ctx.createBufferSource();
+    src.buffer = getNoise(ctx);
+    const f = ctx.createBiquadFilter();
+    f.type = o.type || "bandpass";
+    f.frequency.value = o.freq;
+    f.Q.value = o.q || 1;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(o.peak, t0);
+    env.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    src.connect(f);
+    f.connect(env);
+    env.connect(out);
+    src.start(t0, Math.random());
+    src.stop(t0 + o.dur + 0.05);
+  }
+
+  // Nota de pájaro: barrido rápido de tono con envolvente redondeada
+  function chirp(ctx, out, o) {
+    const t0 = ctx.currentTime + o.at;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(o.f1, t0);
+    osc.frequency.exponentialRampToValueAtTime(o.f2, t0 + o.dur);
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.linearRampToValueAtTime(o.peak, t0 + o.dur * 0.3);
+    env.gain.linearRampToValueAtTime(0.0001, t0 + o.dur);
+    osc.connect(env);
+    env.connect(out);
+    osc.start(t0);
+    osc.stop(t0 + o.dur + 0.02);
   }
 
   const SOUNDS = {
-    bell: {
-      name: "Campana suave",
+    gong: {
+      name: "Gong",
+      wet: 0.35, tone: 4000, gain: 0.55,
       play: function(ctx, out) {
-        voice(ctx, out, { freq: 523.25, at: 0,    dur: 2.6, peak: 0.2,  attack: 0.015, partials: [[1, 1], [2, 0.28], [3, 0.08]] });
-        voice(ctx, out, { freq: 783.99, at: 0.45, dur: 2.4, peak: 0.14, attack: 0.015, partials: [[1, 1], [2, 0.2]] });
+        // Modos inarmónicos que bajan un poco de tono tras el golpe; los agudos florecen algo después
+        const f = 98;
+        [[1, 0.5, 2.2], [1.006, 0.3, 2], [1.52, 0.22, 1.6], [2.03, 0.16, 1.3], [2.47, 0.12, 1.1],
+         [2.96, 0.08, 0.9], [3.58, 0.06, 0.7], [4.24, 0.04, 0.5]].forEach(function(p, i) {
+          partial(ctx, out, { freq: f * p[0], from: f * p[0] * 1.015, glide: 0.9, at: 0, peak: p[1], attack: 0.01 + i * 0.04, decay: p[2] });
+        });
+        hit(ctx, out, { at: 0, type: "lowpass", freq: 220, q: 0.7, peak: 0.6, dur: 0.15 });
       }
     },
     bowl: {
       name: "Cuenco tibetano",
+      wet: 0.3, tone: 5000, gain: 0.85,
       play: function(ctx, out) {
-        voice(ctx, out, { freq: 196, at: 0, dur: 5, peak: 0.16, attack: 0.05, partials: [[1, 1], [1, 0.6, 1.8], [2.71, 0.3], [5.4, 0.08]] });
+        // Cada modo está desdoblado en dos frecuencias muy próximas: de ahí el vaivén típico del cuenco
+        const f = 220;
+        [[1, 0.35, 2.6], [2.71, 0.16, 1.7], [5.15, 0.06, 1], [8.1, 0.025, 0.6]].forEach(function(p) {
+          const split = 0.9 * Math.sqrt(p[0]);
+          partial(ctx, out, { freq: f * p[0] - split, at: 0, peak: p[1], attack: 0.006, decay: p[2] });
+          partial(ctx, out, { freq: f * p[0] + split, at: 0, peak: p[1] * 0.8, attack: 0.006, decay: p[2] * 0.9 });
+        });
+        hit(ctx, out, { at: 0, freq: 1800, q: 1.5, peak: 0.2, dur: 0.03 });
       }
     },
-    chime: {
-      name: "Carillón",
+    birds: {
+      name: "Pájaros",
+      wet: 0.25, tone: 9000, gain: 2.5,
       play: function(ctx, out) {
-        [523.25, 659.25, 783.99, 1046.5].forEach(function(f, i) {
-          voice(ctx, out, { freq: f, at: i * 0.2, dur: 1.7, peak: 0.2, attack: 0.01, partials: [[1, 1], [2, 0.12]] });
-        });
+        // Un pájaro cerca y otro que contesta más lejos; cada vez el canto sale algo distinto
+        function phrase(at, base, gain) {
+          let t = at;
+          const notes = 3 + Math.floor(Math.random() * 4);
+          for (let i = 0; i < notes; i++) {
+            const f = base * rand(0.95, 1.08) * (1 - i * 0.03);
+            chirp(ctx, out, { at: t, f1: f * 1.35, f2: f * 0.8, dur: rand(0.05, 0.09), peak: gain });
+            t += rand(0.09, 0.13);
+          }
+          chirp(ctx, out, { at: t + 0.05, f1: base * 1.2, f2: base * 0.7, dur: 0.22, peak: gain * 0.8 });
+          return t + 0.3;
+        }
+        const near = rand(2600, 3400);
+        const t = phrase(0, near, 0.2);
+        phrase(t + 0.35, rand(2000, 2600), 0.07);
+        phrase(t + 1.4, near, 0.18);
+      }
+    },
+    wood: {
+      name: "Madera",
+      wet: 0.2, tone: 7000, gain: 1.1,
+      play: function(ctx, out) {
+        // Bloque de templo: chasquido seco y una resonancia hueca muy corta
+        function knock(at, f, g) {
+          hit(ctx, out, { at: at, freq: f * 2.3, q: 2, peak: g * 0.6, dur: 0.025 });
+          partial(ctx, out, { freq: f, from: f * 1.04, glide: 0.02, at: at, peak: g, attack: 0.002, decay: 0.045 });
+          partial(ctx, out, { freq: f * 2.76, at: at, peak: g * 0.3, attack: 0.002, decay: 0.02 });
+        }
+        knock(0, 620, 0.5);
+        knock(0.45, 520, 0.45);
+        knock(0.7, 620, 0.4);
       }
     },
     drop: {
-      name: "Gota de agua",
+      name: "Gotas de agua",
+      wet: 0.4, tone: 8000, gain: 4,
       play: function(ctx, out) {
-        voice(ctx, out, { freq: 620, glideFrom: 1100, glide: 0.09, at: 0,    dur: 0.55, peak: 0.28, attack: 0.004 });
-        voice(ctx, out, { freq: 520, glideFrom: 900,  glide: 0.09, at: 0.55, dur: 0.55, peak: 0.16, attack: 0.004 });
+        // Cada gota es una burbuja que resuena y sube de tono al cerrarse
+        [0, 0.38, 0.62, 1.1, 1.35].forEach(function(at, i) {
+          const f = rand(700, 1300);
+          partial(ctx, out, { freq: f * 1.9, from: f, glide: rand(0.03, 0.06), at: at + rand(0, 0.05), peak: rand(0.12, 0.22) * (1 - i * 0.1), attack: 0.002, decay: rand(0.025, 0.045) });
+        });
       }
     },
-    flute: {
-      name: "Flauta suave",
+    windchime: {
+      name: "Campanillas de viento",
+      wet: 0.35, tone: 9000, gain: 2.8,
       play: function(ctx, out) {
-        voice(ctx, out, { freq: 392,    at: 0,   dur: 1.5, peak: 0.22, attack: 0.18, partials: [[1, 1], [2, 0.12]], vibrato: 3 });
-        voice(ctx, out, { freq: 587.33, at: 0.6, dur: 2.0, peak: 0.2,  attack: 0.2,  partials: [[1, 1], [2, 0.1]],  vibrato: 3 });
+        // Tubos metálicos (modos 1 : 2,756 : 5,404 de una barra libre) afinados en pentatónica
+        const scale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+        let t = 0;
+        for (let i = 0; i < 6; i++) {
+          const f = scale[Math.floor(Math.random() * scale.length)];
+          const g = rand(0.06, 0.12);
+          partial(ctx, out, { freq: f, at: t, peak: g, attack: 0.002, decay: 1.6 });
+          partial(ctx, out, { freq: f * 2.756, at: t, peak: g * 0.5, attack: 0.002, decay: 0.7 });
+          partial(ctx, out, { freq: f * 5.404, at: t, peak: g * 0.2, attack: 0.002, decay: 0.3 });
+          t += rand(0.15, 0.5);
+        }
       }
     },
     none: { name: "Sin sonido", play: null }
@@ -852,13 +960,23 @@ try {
       if (!ctx) return;
       const v = Math.max(0, Math.min(100, settings.volume)) / 100;
       const master = ctx.createGain();
-      master.gain.value = Math.pow(v, 1.3) * 1.3;
-      const soften = ctx.createBiquadFilter();
-      soften.type = "lowpass";
-      soften.frequency.value = 3200;
-      soften.connect(master);
+      master.gain.value = Math.pow(v, 1.3) * def.gain;
+      const tone = ctx.createBiquadFilter();
+      tone.type = "lowpass";
+      tone.frequency.value = def.tone;
+      const dry = ctx.createGain();
+      dry.gain.value = 1 - def.wet;
+      const wet = ctx.createGain();
+      wet.gain.value = def.wet;
+      const verb = ctx.createConvolver();
+      verb.buffer = getReverb(ctx);
+      tone.connect(dry);
+      dry.connect(master);
+      tone.connect(verb);
+      verb.connect(wet);
+      wet.connect(master);
       master.connect(ctx.destination);
-      def.play(ctx, soften);
+      def.play(ctx, tone);
     } catch (e) {}
   }
 
