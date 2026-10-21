@@ -605,7 +605,7 @@ try {
     { text: "El hombre noble es lento al hablar y diligente al obrar.", author: "Confucio", source: "Analectas, IV, 24" }
   ];
 
-  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "gong", volume: 60, theme: "auto" };
+  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "handbell", volume: 60, theme: "auto" };
 
   let settings = loadSettings();
   let state = {
@@ -857,17 +857,19 @@ try {
   }
 
   const SOUNDS = {
-    gong: {
-      name: "Gong",
-      wet: 0.35, tone: 4000, gain: 0.55,
+    handbell: {
+      name: "Campanilla",
+      wet: 0.35, tone: 7000, gain: 1,
       play: function(ctx, out) {
-        // Modos inarmónicos que bajan un poco de tono tras el golpe; los agudos florecen algo después
-        const f = 98;
-        [[1, 0.5, 2.2], [1.006, 0.3, 2], [1.52, 0.22, 1.6], [2.03, 0.16, 1.3], [2.47, 0.12, 1.1],
-         [2.96, 0.08, 0.9], [3.58, 0.06, 0.7], [4.24, 0.04, 0.5]].forEach(function(p, i) {
-          partial(ctx, out, { freq: f * p[0], from: f * p[0] * 1.015, glide: 0.9, at: 0, peak: p[1], attack: 0.01 + i * 0.04, decay: p[2] });
-        });
-        hit(ctx, out, { at: 0, type: "lowpass", freq: 220, q: 0.7, peak: 0.6, dur: 0.15 });
+        // Campana de mano: fundamental y su duodécima (3×), golpe blando y un leve vaivén
+        function ring(at, f, g) {
+          [[1, 1, 1.6], [3, 0.12, 0.5], [4.2, 0.03, 0.25]].forEach(function(p) {
+            partial(ctx, out, { freq: f * p[0] - 0.6, at: at, peak: g * p[1], attack: 0.008, decay: p[2] });
+            partial(ctx, out, { freq: f * p[0] + 0.6, at: at, peak: g * p[1] * 0.7, attack: 0.008, decay: p[2] * 0.9 });
+          });
+        }
+        ring(0, 1046.5, 0.25);
+        ring(0.9, 1318.5, 0.15);
       }
     },
     bowl: {
