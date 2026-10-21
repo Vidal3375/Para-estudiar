@@ -423,6 +423,17 @@ try {
   .ghost-btn:hover { color: var(--text); border-color: var(--muted); }
   .reset-stats { margin-top: 18px; }
   .reset-stats:hover { color: var(--focus); border-color: var(--focus); }
+  .credits {
+    margin-top: 14px;
+    font-size: 0.74rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .credits summary { cursor: pointer; }
+  .credits p { margin: 8px 0; }
+  .credits ul { margin: 0; padding-left: 18px; }
+  .credits li { margin-bottom: 4px; }
+  .credits a { color: var(--text); }
   .theme-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -538,6 +549,18 @@ try {
     </div>
 
     <button class="ghost-btn reset-stats" id="resetStats">Borrar historial y estadísticas</button>
+
+    <details class="credits">
+      <summary>Créditos de los sonidos</summary>
+      <p>Grabaciones de Wikimedia Commons, recortadas, con fundido de salida, volumen igualado y convertidas a MP3. Los fragmentos modificados se comparten con la misma licencia que el original. «Madera» es sintetizado.</p>
+      <ul>
+        <li><b>Campanilla</b>: <a href="https://commons.wikimedia.org/wiki/File:Windglockenspiel.Koshi.ogg" target="_blank" rel="noopener">Windglockenspiel.Koshi.ogg</a>, de Membeth. <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.es" target="_blank" rel="noopener">CC0 1.0</a>.</li>
+        <li><b>Cuenco tibetano</b>: <a href="https://commons.wikimedia.org/wiki/File:Small_tibetan_singing_bowl.ogg" target="_blank" rel="noopener">Small tibetan singing bowl.ogg</a>, de Cassa342. <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener">CC BY-SA 4.0</a>.</li>
+        <li><b>Pájaros</b>: <a href="https://commons.wikimedia.org/wiki/File:Bird_singing.ogg" target="_blank" rel="noopener">Bird singing.ogg</a>, de jc (PDSounds). Dominio público.</li>
+        <li><b>Gotas de agua</b>: <a href="https://commons.wikimedia.org/wiki/File:Water_drops_dripping.ogg" target="_blank" rel="noopener">Water drops dripping.ogg</a>, de ZooFari. <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noopener">CC BY-SA 3.0</a>.</li>
+        <li><b>Campanillas de viento</b>: <a href="https://commons.wikimedia.org/wiki/File:Windchimes.ogg" target="_blank" rel="noopener">Windchimes.ogg</a>, de Esc861. Dominio público.</li>
+      </ul>
+    </details>
   </div>
 
   <div class="history">
@@ -859,6 +882,7 @@ try {
   const SOUNDS = {
     handbell: {
       name: "Campanilla",
+      file: "sonidos/campanilla.mp3",
       wet: 0.35, tone: 7000, gain: 1,
       play: function(ctx, out) {
         // Campana de mano: fundamental y su duodécima (3×), golpe blando y un leve vaivén
@@ -874,6 +898,7 @@ try {
     },
     bowl: {
       name: "Cuenco tibetano",
+      file: "sonidos/cuenco.mp3",
       wet: 0.3, tone: 5000, gain: 0.85,
       play: function(ctx, out) {
         // Cada modo está desdoblado en dos frecuencias muy próximas: de ahí el vaivén típico del cuenco
@@ -888,6 +913,7 @@ try {
     },
     birds: {
       name: "Pájaros",
+      file: "sonidos/pajaros.mp3",
       wet: 0.25, tone: 9000, gain: 2.5,
       play: function(ctx, out) {
         // Un pájaro cerca y otro que contesta más lejos; cada vez el canto sale algo distinto
@@ -925,6 +951,7 @@ try {
     },
     drop: {
       name: "Gotas de agua",
+      file: "sonidos/gotas.mp3",
       wet: 0.4, tone: 8000, gain: 4,
       play: function(ctx, out) {
         // Cada gota es una burbuja que resuena y sube de tono al cerrarse
@@ -936,6 +963,7 @@ try {
     },
     windchime: {
       name: "Campanillas de viento",
+      file: "sonidos/campanillas-viento.mp3",
       wet: 0.35, tone: 9000, gain: 2.8,
       play: function(ctx, out) {
         // Tubos metálicos (modos 1 : 2,756 : 5,404 de una barra libre) afinados en pentatónica
@@ -954,6 +982,62 @@ try {
     none: { name: "Sin sonido", play: null }
   };
 
+  // Grabaciones reales (ver «Créditos de los sonidos»); se guardan decodificadas tras la primera carga
+  const buffers = {};
+
+  function loadBuffer(ctx, url) {
+    if (!buffers[url]) {
+      buffers[url] = fetch(url)
+        .then(function(r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.arrayBuffer();
+        })
+        .then(function(data) {
+          return new Promise(function(ok, fail) { ctx.decodeAudioData(data, ok, fail); });
+        });
+      buffers[url].catch(function() { delete buffers[url]; });
+    }
+    return buffers[url];
+  }
+
+  function preloadSound(id) {
+    const def = SOUNDS[id];
+    const ctx = getAudio();
+    if (def && def.file && ctx) loadBuffer(ctx, def.file).catch(function() {});
+  }
+
+  function playSynth(ctx, def, v) {
+    const master = ctx.createGain();
+    master.gain.value = Math.pow(v, 1.3) * def.gain;
+    const tone = ctx.createBiquadFilter();
+    tone.type = "lowpass";
+    tone.frequency.value = def.tone;
+    const dry = ctx.createGain();
+    dry.gain.value = 1 - def.wet;
+    const wet = ctx.createGain();
+    wet.gain.value = def.wet;
+    const verb = ctx.createConvolver();
+    verb.buffer = getReverb(ctx);
+    tone.connect(dry);
+    dry.connect(master);
+    tone.connect(verb);
+    verb.connect(wet);
+    wet.connect(master);
+    master.connect(ctx.destination);
+    def.play(ctx, tone);
+  }
+
+  function playFile(ctx, buf, v) {
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const g = ctx.createGain();
+    g.gain.value = Math.pow(v, 1.3) * 0.6;
+    src.connect(g);
+    g.connect(ctx.destination);
+    src.start();
+  }
+
+  // Si la grabación no carga (sin conexión la primera vez, abierto como archivo local…), suena la versión sintetizada
   function playSound(id) {
     const def = SOUNDS[id];
     if (!def || !def.play) return;
@@ -961,24 +1045,10 @@ try {
       const ctx = getAudio();
       if (!ctx) return;
       const v = Math.max(0, Math.min(100, settings.volume)) / 100;
-      const master = ctx.createGain();
-      master.gain.value = Math.pow(v, 1.3) * def.gain;
-      const tone = ctx.createBiquadFilter();
-      tone.type = "lowpass";
-      tone.frequency.value = def.tone;
-      const dry = ctx.createGain();
-      dry.gain.value = 1 - def.wet;
-      const wet = ctx.createGain();
-      wet.gain.value = def.wet;
-      const verb = ctx.createConvolver();
-      verb.buffer = getReverb(ctx);
-      tone.connect(dry);
-      dry.connect(master);
-      tone.connect(verb);
-      verb.connect(wet);
-      wet.connect(master);
-      master.connect(ctx.destination);
-      def.play(ctx, tone);
+      if (!def.file) { playSynth(ctx, def, v); return; }
+      loadBuffer(ctx, def.file)
+        .then(function(buf) { playFile(ctx, buf, v); })
+        .catch(function() { try { playSynth(ctx, def, v); } catch (e) {} });
     } catch (e) {}
   }
 
@@ -1092,6 +1162,7 @@ try {
   function start() {
     if (state.running) return;
     getAudio();
+    preloadSound(settings.sound);
     state.running = true;
     endTimestamp = Date.now() + state.secondsLeft * 1000;
     tickInterval = setInterval(tick, 250);
