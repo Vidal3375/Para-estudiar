@@ -14,3 +14,11 @@ licencia que el original.
 | `campanillas-viento.mp3` | [Windchimes.ogg](https://commons.wikimedia.org/wiki/File:Windchimes.ogg) | Esc861 | Dominio público | completo (0–5,35 s) |
 
 El sonido «Madera» de la app es sintetizado, no una grabación.
+
+## Icono
+
+`icon-180.png`, `icon-192.png`, `icon-512.png` y `favicon-32.png` se han hecho a partir de
+[Enso.jpg](https://commons.wikimedia.org/wiki/File:Enso.jpg) (Wikimedia Commons), ensō de
+Kanjuro Shibata XX, con licencia doble [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+/ GFDL 1.2 o posterior. Se ha recortado al círculo (sin sellos ni firma) y la tinta se ha
+colocado sobre fondo crema. Los iconos se comparten con la licencia CC BY-SA 3.0.
