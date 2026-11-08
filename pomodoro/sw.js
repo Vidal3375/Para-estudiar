@@ -1,4 +1,4 @@
-const CACHE = "pomodoro-v4";
+const CACHE = "pomodoro-v5";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./favicon-32.png", "./icon-180.png", "./icon-192.png", "./icon-512.png",
   "./sonidos/campanilla.mp3", "./sonidos/cuenco.mp3", "./sonidos/pajaros.mp3", "./sonidos/gotas.mp3", "./sonidos/campanillas-viento.mp3", "./sonidos/madera.mp3"
