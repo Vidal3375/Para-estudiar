@@ -142,6 +142,15 @@ try {
     transition: background 0.2s, color 0.2s, border-color 0.3s, transform 0.1s;
   }
   .session-btn:active { transform: scale(0.98); }
+  .session-info {
+    margin: -8px 4px 16px;
+    text-align: center;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+  .session-info span { white-space: nowrap; }
+  .session-info b { color: var(--text); font-weight: 600; }
   .session-btn[aria-pressed="true"] {
     background: var(--accent);
     color: var(--on-accent);
@@ -467,7 +476,8 @@ try {
 <div class="app">
   <h1>🍅 Pomodoro</h1>
 
-  <button class="session-btn" id="sessionBtn" aria-pressed="false">Inicio Sesión Pomodoro</button>
+  <button class="session-btn" id="sessionBtn" aria-pressed="false" aria-describedby="sessionInfo">Inicio Sesión Pomodoro</button>
+  <p class="session-info" id="sessionInfo"></p>
 
   <div class="modes" id="modes">
     <button class="mode-btn active" data-mode="focus">Enfoque</button>
@@ -1193,6 +1203,26 @@ try {
     renderTime();
   }
 
+  function formatDuration(min) {
+    const h = Math.floor(min / 60), m = min % 60;
+    if (!h) return m + " min";
+    return h + " h" + (m ? " " + m + " min" : "");
+  }
+
+  function renderSessionInfo() {
+    const n = settings.cycleCount;
+    const total = n * settings.focusMin + (n - 1) * settings.shortMin + settings.longMin;
+    const corto = n - 1 === 1 ? "descanso corto" : "descansos cortos";
+    const items = [
+      n + " pomodoros de " + settings.focusMin + " min",
+      (n - 1) + " " + corto + " de " + settings.shortMin + " min",
+      "1 descanso largo de " + settings.longMin + " min"
+    ];
+    document.getElementById("sessionInfo").innerHTML =
+      items.map(function(t) { return "<span>" + t + "</span>"; }).join(" · ") +
+      "<br>Duración total: <b>" + formatDuration(total) + "</b>";
+  }
+
   function setSessionActive(active) {
     sessionActive = active;
     sessionBtn.setAttribute("aria-pressed", String(active));
@@ -1326,6 +1356,7 @@ try {
     settings.longMin = Math.max(1, parseInt(longMinInput.value, 10) || 15);
     settings.cycleCount = Math.max(2, parseInt(cycleCountInput.value, 10) || 4);
     saveSettings();
+    renderSessionInfo();
     if (!state.running) {
       setMode(state.mode);
     } else {
@@ -1350,6 +1381,7 @@ try {
   shortMinInput.value = settings.shortMin;
   longMinInput.value = settings.longMin;
   cycleCountInput.value = settings.cycleCount;
+  renderSessionInfo();
 
   buildSoundSelect();
   buildThemeGrid();
