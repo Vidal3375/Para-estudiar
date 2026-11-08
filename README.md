@@ -20,7 +20,7 @@ Los ajustes y el historial se guardan solo en el navegador (`localStorage`); no 
 2. En **Build and deployment → Source**, elige **Deploy from a branch**.
 3. Elige la rama `master` y la carpeta `/ (root)`, y pulsa **Save**.
 
-Al cabo de un par de minutos estará en `https://vidal3375.github.io/para-estudiar/`
+Al cabo de un par de minutos estará en `https://vidal3375.github.io/Para-estudiar/`
 (la raíz redirige a `pomodoro/`).
 
 ### Probarlo en local
