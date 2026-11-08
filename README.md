@@ -35,6 +35,9 @@ y abrir `http://localhost:8000/pomodoro/`.
 
 ## Licencias
 
-Los sonidos y el icono son obras de terceros con licencias libres (CC0, dominio público,
-CC BY-SA 3.0 y 4.0); el detalle está en [`pomodoro/sonidos/CREDITOS.md`](pomodoro/sonidos/CREDITOS.md).
-El código todavía no tiene una licencia definida.
+- **Código y contenido propio** (HTML, JavaScript, `sw.js`, manifiesto, README y el PDF de citas):
+  licencia abierta [MIT](LICENSE).
+- **Sonidos e icono**: obras de terceros con sus propias licencias libres (CC0, dominio público,
+  CC BY-SA 3.0 y CC BY-SA 4.0). Autores, fuentes, licencias y cambios realizados en
+  [`pomodoro/sonidos/CREDITOS.md`](pomodoro/sonidos/CREDITOS.md); los mismos créditos aparecen
+  dentro de la app, en **Ajustes → Créditos**.
