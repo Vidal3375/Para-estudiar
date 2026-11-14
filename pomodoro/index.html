@@ -565,6 +565,10 @@ try {
       <label for="cycleCount">Pomodoros antes de descanso largo</label>
       <input type="number" id="cycleCount" min="2" max="8" value="4">
     </div>
+    <div class="setting-row">
+      <label for="autoContinue">Pasar sola a la siguiente fase al terminar cada una</label>
+      <input type="checkbox" id="autoContinue">
+    </div>
 
     <button class="ghost-btn reset-stats" id="resetStats">Borrar historial y estadísticas</button>
 
@@ -649,7 +653,7 @@ try {
     { text: "El hombre noble es lento al hablar y diligente al obrar.", author: "Confucio", source: "Analectas, IV, 24" }
   ];
 
-  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "handbell", volume: 60, theme: "auto", keepAwake: true };
+  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "handbell", volume: 60, theme: "auto", keepAwake: true, autoContinue: true };
 
   let settings = loadSettings();
   let state = {
@@ -683,6 +687,7 @@ try {
   const volumeRange = document.getElementById("volumeRange");
   const soundTestBtn = document.getElementById("soundTest");
   const keepAwakeInput = document.getElementById("keepAwake");
+  const autoContinueInput = document.getElementById("autoContinue");
   const themeGrid = document.getElementById("themeGrid");
   const quoteEl = document.getElementById("quote");
   const quoteTextEl = document.getElementById("quoteText");
@@ -1364,6 +1369,7 @@ try {
   function finishPhase(endAt) {
     state.running = false;
     startBtn.textContent = "Iniciar";
+    const auto = !!settings.autoContinue;
 
     if (state.mode === "focus") {
       recordCompletedFocus(endAt);
@@ -1377,19 +1383,26 @@ try {
         msg = ["¡Pomodoro completado!", "Hora de un descanso corto."];
         setMode("short");
       }
-      if (sessionActive) start(endAt);
+      if (auto) start(endAt);
+      else sessionLabelEl.textContent = "Pulsa Iniciar para el descanso";
       return msg;
     }
 
-    if (state.mode === "long" && sessionActive) {
+    // El descanso largo cierra el ciclo: ahí se para siempre.
+    if (state.mode === "long") {
+      const wasSession = sessionActive;
       setSessionActive(false);
       setMode("focus");
-      sessionLabelEl.textContent = "Sesión completada";
-      return ["Sesión completada", "Has terminado el ciclo completo. ¡Buen trabajo!"];
+      if (wasSession) {
+        sessionLabelEl.textContent = "Sesión completada";
+        return ["Sesión completada", "Has terminado el ciclo completo. ¡Buen trabajo!"];
+      }
+      return ["Descanso terminado", "Ciclo completo. Pulsa Iniciar para empezar otro."];
     }
 
     setMode("focus");
-    if (sessionActive) start(endAt);
+    if (auto) start(endAt);
+    else sessionLabelEl.textContent = "Pulsa Iniciar para seguir";
     return ["Descanso terminado", "Volvamos a enfocarnos."];
   }
 
@@ -1481,6 +1494,11 @@ try {
 
   soundTestBtn.addEventListener("click", function() { playSound(settings.sound); });
 
+  autoContinueInput.addEventListener("change", function() {
+    settings.autoContinue = autoContinueInput.checked;
+    saveSettings();
+  });
+
   keepAwakeInput.addEventListener("change", function() {
     settings.keepAwake = keepAwakeInput.checked;
     saveSettings();
@@ -1549,6 +1567,7 @@ try {
   applyTheme(THEMES.some(function(t) { return t.id === settings.theme; }) ? settings.theme : "auto");
 
   keepAwakeInput.checked = !!settings.keepAwake;
+  autoContinueInput.checked = !!settings.autoContinue;
   if (!("wakeLock" in navigator)) document.getElementById("keepAwakeRow").hidden = true;
 
   restoreTimer();
