@@ -1497,6 +1497,8 @@ try {
     }
   });
   window.addEventListener("pageshow", tick);
+  // En apps de la pantalla de inicio de iPhone, visibilitychange no siempre llega.
+  window.addEventListener("focus", function() { tick(); if (state.running) requestWakeLock(); });
 
   themeGrid.addEventListener("click", function(e) {
     const btn = e.target.closest(".theme-opt");
