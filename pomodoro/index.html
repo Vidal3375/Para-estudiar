@@ -418,6 +418,8 @@ try {
   }
   .setting-row input[type="number"] { width: 60px; text-align: center; }
   .setting-row select { max-width: 190px; }
+  .setting-row[hidden] { display: none; }
+  .setting-row input[type="checkbox"] { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
   .setting-row input[type="range"] { width: 150px; accent-color: var(--accent); }
   .ghost-btn {
     margin-top: 6px;
@@ -538,6 +540,11 @@ try {
     </div>
     <button class="ghost-btn" id="soundTest">Probar sonido</button>
 
+    <div class="setting-row" id="keepAwakeRow">
+      <label for="keepAwake">Mantener la pantalla encendida mientras corre el tiempo</label>
+      <input type="checkbox" id="keepAwake">
+    </div>
+
     <div class="setting-title">Tema</div>
     <div class="theme-grid" id="themeGrid"></div>
 
@@ -642,7 +649,7 @@ try {
     { text: "El hombre noble es lento al hablar y diligente al obrar.", author: "Confucio", source: "Analectas, IV, 24" }
   ];
 
-  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "handbell", volume: 60, theme: "auto" };
+  const DEFAULT_SETTINGS = { focusMin: 25, shortMin: 5, longMin: 15, cycleCount: 4, sound: "handbell", volume: 60, theme: "auto", keepAwake: true };
 
   let settings = loadSettings();
   let state = {
@@ -675,6 +682,7 @@ try {
   const soundSelect = document.getElementById("soundSelect");
   const volumeRange = document.getElementById("volumeRange");
   const soundTestBtn = document.getElementById("soundTest");
+  const keepAwakeInput = document.getElementById("keepAwake");
   const themeGrid = document.getElementById("themeGrid");
   const quoteEl = document.getElementById("quote");
   const quoteTextEl = document.getElementById("quoteText");
@@ -715,14 +723,14 @@ try {
     } catch (e) {}
   }
 
-  function todayKey() {
-    const d = new Date();
+  function todayKey(at) {
+    const d = at ? new Date(at) : new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
-  function recordCompletedFocus() {
+  function recordCompletedFocus(at) {
     const history = loadHistory();
-    const key = todayKey();
+    const key = todayKey(at);
     history[key] = (history[key] || 0) + 1;
     saveHistory(history);
     renderStats();
@@ -1139,6 +1147,7 @@ try {
 
     renderDots();
     renderTime();
+    saveTimer();
   }
 
   function renderDots() {
@@ -1162,36 +1171,69 @@ try {
     const progress = state.totalSeconds > 0 ? (state.totalSeconds - state.secondsLeft) / state.totalSeconds : 0;
     const offset = CIRC * (1 - progress);
     ring.style.strokeDashoffset = offset;
+    document.title = state.running
+      ? formatTime(Math.max(0, state.secondsLeft)) + " · " + modeConfig[state.mode].label
+      : "Pomodoro";
   }
 
-  function tick() {
-    const now = Date.now();
-    const remainingMs = endTimestamp - now;
-    state.secondsLeft = Math.max(0, Math.round(remainingMs / 1000));
-    renderTime();
-    if (state.secondsLeft <= 0) {
-      completeSession();
+  /* El tiempo se calcula siempre a partir de la hora de fin (endTimestamp), así que
+     aunque el navegador ralentice o congele la página en segundo plano, al volver
+     se recupera el tiempo real. El "reloj" que comprueba el tiempo va en un worker,
+     que los navegadores de escritorio frenan menos que los temporizadores de la página. */
+  function startTicker() {
+    if (tickInterval) return;
+    try {
+      const url = URL.createObjectURL(new Blob(["setInterval(function(){postMessage(0)},250)"], { type: "text/javascript" }));
+      const worker = new Worker(url);
+      worker.onmessage = tick;
+      tickInterval = { stop: function() { worker.terminate(); URL.revokeObjectURL(url); } };
+    } catch (e) {
+      const id = setInterval(tick, 250);
+      tickInterval = { stop: function() { clearInterval(id); } };
     }
   }
 
-  function start() {
+  function stopTicker() {
+    if (tickInterval) { tickInterval.stop(); tickInterval = null; }
+  }
+
+  function tick() {
+    if (!state.running) return;
+    if (Date.now() >= endTimestamp) { finishPhases(); return; }
+    state.secondsLeft = Math.max(0, Math.ceil((endTimestamp - Date.now()) / 1000));
+    renderTime();
+  }
+
+  /* fromTs: momento en que empieza la fase (por defecto, ahora). Al encadenar fases
+     se usa la hora en que terminó la anterior, para no perder tiempo. */
+  function start(fromTs) {
     if (state.running) return;
     getAudio();
     preloadSound(settings.sound);
     state.running = true;
-    endTimestamp = Date.now() + state.secondsLeft * 1000;
-    tickInterval = setInterval(tick, 250);
+    endTimestamp = (fromTs || Date.now()) + state.secondsLeft * 1000;
+    startTicker();
     startBtn.textContent = "Pausar";
     sessionLabelEl.textContent = phaseLabel();
-    maybeRequestNotifications();
+    if (!fromTs) {
+      maybeRequestNotifications();
+      requestWakeLock();
+      renderTime();
+      saveTimer();
+    }
   }
 
   function pause() {
+    if (state.running) {
+      state.secondsLeft = Math.max(0, Math.ceil((endTimestamp - Date.now()) / 1000));
+    }
     state.running = false;
-    clearInterval(tickInterval);
-    tickInterval = null;
+    stopTicker();
+    releaseWakeLock();
     startBtn.textContent = "Continuar";
     sessionLabelEl.textContent = "Pausado";
+    renderTime();
+    saveTimer();
   }
 
   function resetCurrent() {
@@ -1201,6 +1243,76 @@ try {
     startBtn.textContent = "Iniciar";
     sessionLabelEl.textContent = IDLE_LABELS[state.mode];
     renderTime();
+    saveTimer();
+  }
+
+  /* ---------- Guardar y recuperar el temporizador ---------- */
+
+  const TIMER_KEY = STORAGE_KEY + "_timer";
+
+  function saveTimer() {
+    try {
+      localStorage.setItem(TIMER_KEY, JSON.stringify({
+        mode: state.mode,
+        secondsLeft: state.secondsLeft,
+        totalSeconds: state.totalSeconds,
+        running: state.running,
+        completedInCycle: state.completedInCycle,
+        sessionActive: sessionActive,
+        endTimestamp: endTimestamp,
+        startLabel: startBtn.textContent
+      }));
+    } catch (e) {}
+  }
+
+  function restoreTimer() {
+    let t = null;
+    try { t = JSON.parse(localStorage.getItem(TIMER_KEY)); } catch (e) {}
+    const num = function(x) { return typeof x === "number" && isFinite(x) && x >= 0; };
+    if (!t || !modeConfig[t.mode] || !num(t.secondsLeft) || !num(t.totalSeconds)) {
+      setMode("focus", true);
+      return;
+    }
+    setSessionActive(!!t.sessionActive);
+    state.completedInCycle = num(t.completedInCycle) ? Math.min(t.completedInCycle, settings.cycleCount - 1) : 0;
+    state.secondsLeft = t.secondsLeft;
+    state.totalSeconds = t.totalSeconds;
+    setMode(t.mode, false);
+    if (t.running && num(t.endTimestamp)) {
+      state.running = true;
+      endTimestamp = t.endTimestamp;
+      startTicker();
+      startBtn.textContent = "Pausar";
+      sessionLabelEl.textContent = phaseLabel();
+      requestWakeLock();
+      saveTimer();
+      tick();
+    } else {
+      startBtn.textContent = t.startLabel === "Continuar" ? "Continuar" : "Iniciar";
+      if (startBtn.textContent === "Continuar") sessionLabelEl.textContent = "Pausado";
+    }
+  }
+
+  /* ---------- Mantener la pantalla encendida ---------- */
+
+  let wakeLock = null;
+
+  function requestWakeLock() {
+    if (!settings.keepAwake || !state.running || wakeLock || !("wakeLock" in navigator)) return;
+    if (document.visibilityState !== "visible") return;
+    navigator.wakeLock.request("screen").then(function(lock) {
+      if (!state.running || !settings.keepAwake) { lock.release().catch(function() {}); return; }
+      wakeLock = lock;
+      lock.addEventListener("release", function() { if (wakeLock === lock) wakeLock = null; });
+    }).catch(function() {});
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      const lock = wakeLock;
+      wakeLock = null;
+      lock.release().catch(function() {});
+    }
   }
 
   function formatDuration(min) {
@@ -1227,6 +1339,7 @@ try {
     sessionActive = active;
     sessionBtn.setAttribute("aria-pressed", String(active));
     sessionBtn.textContent = active ? "Detener sesión" : "Inicio Sesión Pomodoro";
+    saveTimer();
   }
 
   function startSession() {
@@ -1246,40 +1359,59 @@ try {
     sessionLabelEl.textContent = IDLE_LABELS.focus;
   }
 
-  function completeSession() {
-    clearInterval(tickInterval);
-    tickInterval = null;
+  /* Termina la fase que acababa en endAt y, si hay sesión en marcha, empieza la
+     siguiente justo en ese momento. Devuelve el aviso que corresponde. */
+  function finishPhase(endAt) {
     state.running = false;
     startBtn.textContent = "Iniciar";
-    playSound(settings.sound);
-    showQuote(true);
 
     if (state.mode === "focus") {
-      recordCompletedFocus();
+      recordCompletedFocus(endAt);
       state.completedInCycle++;
+      let msg;
       if (state.completedInCycle >= settings.cycleCount) {
         state.completedInCycle = 0;
-        notify("¡Pomodoro completado!", "Hora de un descanso largo.");
+        msg = ["¡Pomodoro completado!", "Hora de un descanso largo."];
         setMode("long");
       } else {
-        notify("¡Pomodoro completado!", "Hora de un descanso corto.");
+        msg = ["¡Pomodoro completado!", "Hora de un descanso corto."];
         setMode("short");
       }
-      if (sessionActive) start();
-      return;
+      if (sessionActive) start(endAt);
+      return msg;
     }
 
     if (state.mode === "long" && sessionActive) {
       setSessionActive(false);
       setMode("focus");
       sessionLabelEl.textContent = "Sesión completada";
-      notify("Sesión completada", "Has terminado el ciclo completo. ¡Buen trabajo!");
-      return;
+      return ["Sesión completada", "Has terminado el ciclo completo. ¡Buen trabajo!"];
     }
 
-    notify("Descanso terminado", "Volvamos a enfocarnos.");
     setMode("focus");
-    if (sessionActive) start();
+    if (sessionActive) start(endAt);
+    return ["Descanso terminado", "Volvamos a enfocarnos."];
+  }
+
+  /* Si la página estuvo congelada en segundo plano, puede que hayan terminado
+     varias fases seguidas: se recorren todas y se avisa una sola vez. */
+  function finishPhases() {
+    let msg = null;
+    let guard = 0;
+    while (state.running && Date.now() >= endTimestamp && guard++ < 200) {
+      msg = finishPhase(endTimestamp);
+    }
+    if (state.running) {
+      state.secondsLeft = Math.max(0, Math.ceil((endTimestamp - Date.now()) / 1000));
+      renderTime();
+    } else {
+      stopTicker();
+      releaseWakeLock();
+    }
+    playSound(settings.sound);
+    showQuote(true);
+    if (msg) notify(msg[0], msg[1]);
+    saveTimer();
   }
 
   function maybeRequestNotifications() {
@@ -1289,8 +1421,15 @@ try {
   }
 
   function notify(title, body) {
-    if ("Notification" in window && Notification.permission === "granted") {
-      try { new Notification(title, { body: body }); } catch (e) {}
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const opts = { body: body, icon: "icon-192.png", tag: "pomodoro", renotify: true };
+    const fallback = function() { try { new Notification(title, opts); } catch (e) {} };
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      navigator.serviceWorker.getRegistration()
+        .then(function(reg) { if (!reg) throw new Error("sin service worker"); return reg.showNotification(title, opts); })
+        .catch(fallback);
+    } else {
+      fallback();
     }
   }
 
@@ -1342,6 +1481,25 @@ try {
 
   soundTestBtn.addEventListener("click", function() { playSound(settings.sound); });
 
+  keepAwakeInput.addEventListener("change", function() {
+    settings.keepAwake = keepAwakeInput.checked;
+    saveSettings();
+    if (settings.keepAwake) requestWakeLock(); else releaseWakeLock();
+  });
+
+  /* Al volver a la página: recuperar el tiempo real, reactivar el audio y la pantalla. */
+  document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState !== "visible") return;
+    tick();
+    if (state.running) {
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(function() {});
+      requestWakeLock();
+    }
+  });
+  window.addEventListener("pageshow", tick);
+  // En apps de la pantalla de inicio de iPhone, visibilitychange no siempre llega.
+  window.addEventListener("focus", function() { tick(); if (state.running) requestWakeLock(); });
+
   themeGrid.addEventListener("click", function(e) {
     const btn = e.target.closest(".theme-opt");
     if (!btn) return;
@@ -1390,7 +1548,10 @@ try {
   volumeRange.value = settings.volume;
   applyTheme(THEMES.some(function(t) { return t.id === settings.theme; }) ? settings.theme : "auto");
 
-  setMode("focus", true);
+  keepAwakeInput.checked = !!settings.keepAwake;
+  if (!("wakeLock" in navigator)) document.getElementById("keepAwakeRow").hidden = true;
+
+  restoreTimer();
   renderStats();
   showQuote(false);
 
