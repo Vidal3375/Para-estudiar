@@ -247,6 +247,7 @@
     });
 
     pintarLista();
+    cerrarAcertijo();
     actualizarEstado();
     marcarSeleccion();
     ajustarTamano();
@@ -488,24 +489,79 @@
     guardar();
   }
 
-  // Confirmación dentro de la página (las ventanas confirm() pueden estar bloqueadas):
-  // el primer toque pide confirmar y el segundo, en menos de 5 s, muestra la solución.
-  var confirmaSolucion = null;
+  /* ---------- Ver solución: antes hay que resolver un acertijo ----------
+     El acertijo es un anagrama de un término del Excel que NO está en este
+     tablero, con su pista corta. En el nivel fácil se da la primera letra. */
+  var acertijo = null;
+
+  function nuevoAcertijo() {
+    var enTablero = {};
+    partida.entradas.forEach(function (e) { enTablero[e.id] = true; });
+    var usadas = {};
+    partida.entradas.forEach(function (e) {
+      var t = DATOS.terminos.find(function (x) { return x.id === e.id; });
+      if (t) usadas[t.r] = true;
+    });
+    var cand = DATOS.terminos.filter(function (t) {
+      var n = letrasDe(t.r).length;
+      return !enTablero[t.id] && !usadas[t.r] && n >= 6 && n <= 10 && (!acertijo || t.r !== acertijo.r);
+    });
+    if (!cand.length) cand = DATOS.terminos.filter(function (t) { var n = letrasDe(t.r).length; return n >= 5 && n <= 12; });
+    var t = cand[Math.floor(Math.random() * cand.length)];
+    var letras = letrasDe(t.r), mezcla;
+    var intentos = 0;
+    do {
+      mezcla = letras.slice();
+      for (var i = mezcla.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1)); var x = mezcla[i]; mezcla[i] = mezcla[j]; mezcla[j] = x;
+      }
+      intentos++;
+    } while (mezcla.join("") === t.r && intentos < 20);
+    acertijo = { r: t.r, t: t.t, p: t.p, mezcla: mezcla.join(" "), n: letras.length };
+    pintarAcertijo();
+  }
+
+  function pintarAcertijo() {
+    var txt = $("#acertijo-texto");
+    txt.innerHTML = "";
+    txt.appendChild(document.createTextNode("Ordena estas letras para formar un término del vocabulario:"));
+    txt.appendChild(el("span", "letras-acertijo", acertijo.mezcla));
+    var pista = el("span", "pista-acertijo");
+    pista.appendChild(el("b", "", "Pista: "));
+    pista.appendChild(document.createTextNode(acertijo.p + " (" + acertijo.n + " letras" +
+      (partida.nivel === "facil" ? "; empieza por " + letrasDe(acertijo.r)[0] : "") + ")"));
+    txt.appendChild(pista);
+    $("#acertijo-resp").value = "";
+    $("#acertijo-msg").textContent = "";
+  }
+
   function solucion() {
     if (partida.terminada) return;
-    var b = $("#b-solucion");
-    if (!confirmaSolucion) {
-      b.textContent = "¿Seguro? Pulsa otra vez";
-      b.classList.add("aviso-boton");
-      confirmaSolucion = setTimeout(function () {
-        confirmaSolucion = null; b.textContent = "Ver solución"; b.classList.remove("aviso-boton");
-      }, 5000);
-      return;
+    var panel = $("#acertijo");
+    if (!panel.hidden) { cerrarAcertijo(); return; }
+    nuevoAcertijo();
+    panel.hidden = false;
+    $("#b-solucion").textContent = "Cerrar el acertijo";
+    panel.scrollIntoView({ behavior: "smooth", block: "center" });
+    try { $("#acertijo-resp").focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  function cerrarAcertijo() {
+    $("#acertijo").hidden = true;
+    $("#b-solucion").textContent = "Ver solución";
+  }
+
+  function responderAcertijo() {
+    var resp = Array.from($("#acertijo-resp").value).map(normaliza).join("");
+    if (!resp) return;
+    if (resp === acertijo.r) {
+      cerrarAcertijo();
+      partida.celdas.forEach(function (x) { if (x.k === "L" && x.v !== x.s) { x.v = x.s; x.revelada = true; } });
+      aviso("¡Acertijo resuelto! Era «" + acertijo.t + "». Aquí tienes la solución.", 5000);
+      terminar(true);
+    } else {
+      $("#acertijo-msg").textContent = "No es correcto. Prueba otra vez o pide otro acertijo.";
     }
-    clearTimeout(confirmaSolucion); confirmaSolucion = null;
-    b.textContent = "Ver solución"; b.classList.remove("aviso-boton");
-    partida.celdas.forEach(function (x) { if (x.k === "L" && x.v !== x.s) { x.v = x.s; x.revelada = true; } });
-    terminar(true);
   }
 
   function terminar(rendido) {
@@ -639,6 +695,10 @@
     $("#b-letra").addEventListener("click", function () { darLetra(); });
     $("#b-comprobar").addEventListener("click", function () { comprobar(); });
     $("#b-solucion").addEventListener("click", function () { solucion(); });
+    $("#acertijo-ok").addEventListener("click", function () { responderAcertijo(); });
+    $("#acertijo-resp").addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); responderAcertijo(); } });
+    $("#acertijo-otro").addEventListener("click", function () { nuevoAcertijo(); });
+    $("#acertijo-cancelar").addEventListener("click", function () { cerrarAcertijo(); });
     $("#visor-cerrar").addEventListener("click", function () { var d = $("#visor"); if (d.close) d.close(); else d.removeAttribute("open"); });
 
     var inp = $("#teclado");

@@ -73,6 +73,12 @@
   .boton { padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); cursor: pointer; }
   .boton:hover:not(:disabled) { border-color: var(--acento); }
   .boton:disabled { opacity: 0.5; cursor: default; }
+  .acertijo { margin: 4px 0 12px; }
+  .acertijo p { margin: 6px 0; }
+  .letras-acertijo { display: block; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.15em; margin: 10px 0; color: var(--acento); }
+  .pista-acertijo { display: block; }
+  #acertijo-resp { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); min-width: 0; flex: 1 1 180px; text-transform: uppercase; }
+  #acertijo-msg { color: var(--mal); min-height: 1.2em; }
   .boton.aviso-boton { border-color: var(--mal); color: var(--mal); font-weight: 600; }
   .boton.principal { background: var(--acento); border-color: var(--acento); color: #fff; font-weight: 600; }
   @media (prefers-color-scheme: dark) { .boton.principal { color: #1c1b1a; } }
@@ -231,6 +237,19 @@
           <button class="boton" id="b-comprobar" type="button">Comprobar</button>
           <button class="boton" id="b-solucion" type="button">Ver solución</button>
           <button class="boton" id="b-nuevo" type="button">Nuevo autodefinido</button>
+        </div>
+        <div class="tarjeta acertijo" id="acertijo" hidden>
+          <p><b>Para ver la solución, resuelve este acertijo.</b></p>
+          <p id="acertijo-texto"></p>
+          <div class="fila">
+            <input id="acertijo-resp" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-label="Respuesta del acertijo" placeholder="Respuesta">
+            <button class="boton principal" id="acertijo-ok" type="button">Comprobar</button>
+          </div>
+          <p class="ayuda" id="acertijo-msg" aria-live="polite"></p>
+          <div class="fila">
+            <button class="boton" id="acertijo-otro" type="button">Otro acertijo</button>
+            <button class="boton" id="acertijo-cancelar" type="button">Volver al autodefinido</button>
+          </div>
         </div>
       </div>
       <aside>
