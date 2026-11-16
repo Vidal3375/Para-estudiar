@@ -224,7 +224,7 @@
           s.dataset.e = ei;
           var num = el("b", "num", e.n);
           s.appendChild(num);
-          s.appendChild(document.createTextNode(" " + e.pista));
+          s.appendChild(el("span", "in", e.pista));
           d.appendChild(s);
         });
         d.addEventListener("click", function () {
@@ -278,9 +278,43 @@
   function ajustarTamano() {
     var tab = $("#tablero"), N = partida.N;
     var ancho = $("#pista-activa").clientWidth || tab.parentElement.clientWidth;
-    var tam = Math.max(22, Math.min(58, Math.floor((ancho - 2) / N)));
+    var tam = Math.max(22, Math.min(64, Math.floor((ancho - 2) / N)));
+    // Con ratón (ordenador) las casillas pueden ser más grandes, sin pasar del alto de la ventana.
+    if (window.matchMedia && window.matchMedia("(pointer: fine)").matches) {
+      var porAlto = Math.max(56, Math.floor((window.innerHeight - 190) / N));
+      tam = Math.max(22, Math.min(80, Math.floor((ancho - 2) / N), porAlto));
+    }
     tab.style.setProperty("--tam", tam + "px");
-    tab.classList.toggle("compacto", tam < 46);
+    tab.classList.toggle("compacto", tam < 36);
+    ajustarTextos(tam);
+  }
+
+  // Ajusta la letra de cada casilla de definición para que el texto quepa.
+  // Si no cabe ni con la letra mínima, la casilla muestra solo el número.
+  function ajustarTextos(tam) {
+    var tab = $("#tablero");
+    if (tab.classList.contains("compacto")) return;
+    var max = Math.min(13, tam * 0.24), min = 8;
+    tab.querySelectorAll(".celda.def").forEach(function (cel) {
+      cel.classList.remove("solo-num");
+      var spans = Array.prototype.slice.call(cel.querySelectorAll(".def-txt"));
+      var doble = spans.length > 1;
+      // Se mide el texto (.in), que no se recorta, frente al hueco disponible.
+      function cabe() {
+        return spans.every(function (s) {
+          var t = s.querySelector(".in");
+          var alto = doble ? s.clientHeight : cel.clientHeight - 2;
+          return t.offsetHeight <= alto && t.scrollWidth <= s.clientWidth + 1;
+        });
+      }
+      var f = max;
+      spans.forEach(function (s) { s.style.fontSize = f + "px"; });
+      while (!cabe() && f > min) {
+        f = Math.max(min, f - 0.5);
+        spans.forEach(function (s) { s.style.fontSize = f + "px"; });
+      }
+      if (!cabe()) cel.classList.add("solo-num");
+    });
   }
 
   /* ---------- Selección y escritura ---------- */
@@ -320,6 +354,10 @@
     if (e.img) { var im = tab.querySelector(".imagen"); if (im) im.classList.add("def-sel"); }
     var li = document.querySelector('#lista li[data-e="' + seleccion.e + '"]');
     if (li) li.classList.add("activo");
+    // El campo de escritura (invisible) se coloca sobre la casilla actual para que,
+    // al abrir el teclado del iPad, la página se desplace hasta ella.
+    var act = tab.querySelector(".celda.actual"), inp = $("#teclado");
+    if (act && inp) { inp.style.left = (act.offsetLeft + tab.offsetLeft) + "px"; inp.style.top = (act.offsetTop + tab.offsetTop) + "px"; }
     barra.innerHTML = "";
     barra.appendChild(el("b", "num", e.n));
     barra.appendChild(el("span", "flecha-lista", FLECHA_TXT[e.flecha]));
@@ -591,12 +629,16 @@
     $("#visor-cerrar").addEventListener("click", function () { var d = $("#visor"); if (d.close) d.close(); else d.removeAttribute("open"); });
 
     var inp = $("#teclado");
-    inp.addEventListener("input", function () {
+    var borradoPorTecla = false;
+    inp.addEventListener("input", function (ev) {
       var v = inp.value; inp.value = "";
+      // Teclados que no envían la tecla de borrar (algunos táctiles).
+      if (ev.inputType === "deleteContentBackward") { if (!borradoPorTecla) borrar(); borradoPorTecla = false; return; }
       Array.from(v).forEach(function (ch) { var n = normaliza(ch); if (n) escribir(n); });
     });
     inp.addEventListener("keydown", function (ev) {
-      if (ev.key === "Backspace") { ev.preventDefault(); borrar(); }
+      borradoPorTecla = false;
+      if (ev.key === "Backspace") { ev.preventDefault(); borradoPorTecla = true; borrar(); }
       else if (ev.key === "ArrowLeft") { ev.preventDefault(); mover(0, -1); }
       else if (ev.key === "ArrowRight") { ev.preventDefault(); mover(0, 1); }
       else if (ev.key === "ArrowUp") { ev.preventDefault(); mover(-1, 0); }
