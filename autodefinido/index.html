@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autodefinido de Historia de España</title>
+<meta name="description" content="Autodefinido con el vocabulario de Historia de España: elige el periodo y la dificultad.">
+<meta name="theme-color" content="#f8f6f3">
+<link rel="icon" href="../pomodoro/favicon-32.png" type="image/png">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f8f6f3;
+    --card: #fdfcfa;
+    --text: #3f3a37;
+    --muted: #7f7975;
+    --border: #e6e1db;
+    --acento: #b5675a;
+    --acento-suave: #f5e6e2;
+    --def: #efe9e1;
+    --def-texto: #4d4540;
+    --vacia: #d9d2c9;
+    --sel: #e3eef3;
+    --actual: #bcd8e6;
+    --mal: #c0392b;
+    --bien: #2f7a5b;
+    --revelada: #7a5bb5;
+    --sombra: 0 1px 2px rgba(0,0,0,0.03), 0 8px 24px rgba(60,40,30,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #1c1b1a;
+      --card: #252322;
+      --text: #e6e1dc;
+      --muted: #a39c96;
+      --border: #3a3633;
+      --acento: #d99384;
+      --acento-suave: #3a2a27;
+      --def: #302c29;
+      --def-texto: #e0d8d0;
+      --vacia: #121110;
+      --sel: #23343c;
+      --actual: #2f5566;
+      --mal: #ff7b6b;
+      --bien: #7fcfa8;
+      --revelada: #b9a0ef;
+      --sombra: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45;
+  }
+  a { color: var(--acento); }
+  .envoltura { max-width: 980px; margin: 0 auto; padding: 16px; }
+  header.cab { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  header.cab h1 { font-size: clamp(1.4rem, 4vw, 2rem); margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+  header.cab a { font-size: 0.9rem; }
+  .tarjeta { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--sombra); }
+  .campo { margin: 14px 0; }
+  .campo > label, .campo > .etq-campo { display: block; font-weight: 600; margin-bottom: 6px; }
+  .fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  select, button, input { font: inherit; color: inherit; }
+  select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); min-width: 0; max-width: 100%; }
+  .ayuda { color: var(--muted); font-size: 0.9rem; margin: 6px 0 0; }
+  .segmentos { display: flex; flex-wrap: wrap; gap: 6px; }
+  .segmento { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
+  .segmento.activo { background: var(--acento); border-color: var(--acento); color: #fff; }
+  @media (prefers-color-scheme: dark) { .segmento.activo { color: #1c1b1a; } }
+  .boton { padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); cursor: pointer; }
+  .boton:hover:not(:disabled) { border-color: var(--acento); }
+  .boton:disabled { opacity: 0.5; cursor: default; }
+  .boton.principal { background: var(--acento); border-color: var(--acento); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .boton.principal { color: #1c1b1a; } }
+  .check { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+
+  /* ---------- Juego ---------- */
+  .barra-juego { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .barra-juego h2 { font-size: 1.05rem; margin: 0; }
+  .estado { color: var(--muted); font-size: 0.9rem; display: flex; gap: 12px; }
+  #reloj { font-variant-numeric: tabular-nums; }
+  .pista-activa {
+    position: sticky; top: 0; z-index: 5; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; min-height: 2.9em; box-shadow: var(--sombra);
+  }
+  .num { display: inline-block; min-width: 1.4em; font-weight: 700; color: var(--acento); }
+  .flecha-lista { color: var(--muted); margin: 0 2px; }
+  .largo { color: var(--muted); font-size: 0.85em; white-space: nowrap; }
+  .etq { font-size: 0.75em; border: 1px solid var(--border); border-radius: 6px; padding: 0 5px; margin-left: 4px; color: var(--muted); }
+  .marco-tablero { width: 100%; overflow-x: auto; display: flex; justify-content: center; }
+  #tablero {
+    --tam: 40px;
+    display: grid; grid-template-columns: repeat(var(--n), var(--tam)); grid-template-rows: repeat(var(--n), var(--tam));
+    border: 2px solid var(--text); background: var(--text); gap: 1px; user-select: none; -webkit-user-select: none;
+  }
+  .celda { position: relative; background: var(--card); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .celda.vacia { background: var(--vacia); background-image: repeating-linear-gradient(45deg, transparent 0 4px, rgba(0,0,0,0.035) 4px 5px); }
+  .celda.letra { cursor: pointer; }
+  .celda.letra .v { font-size: calc(var(--tam) * 0.56); font-weight: 600; line-height: 1; text-transform: uppercase; }
+  .celda.sel { background: var(--sel); }
+  .celda.actual { background: var(--actual); }
+  .celda.mal .v { color: var(--mal); }
+  .celda.fija .v { color: var(--muted); }
+  .celda.revelada .v { color: var(--revelada); }
+  .flecha { position: absolute; font-style: normal; color: var(--acento); font-size: calc(var(--tam) * 0.26); line-height: 1; pointer-events: none; }
+  .f-h1, .f-img-h { left: 1px; top: 50%; transform: translateY(-50%); }
+  .f-v1, .f-img-v { top: 0; left: 50%; transform: translateX(-50%); }
+  .f-h2 { top: 1px; left: 2px; }
+  .f-v2 { bottom: 1px; left: 2px; }
+  .celda.def { background: var(--def); color: var(--def-texto); cursor: pointer; flex-direction: column; align-items: stretch; justify-content: center; padding: 1px 2px; }
+  .def-txt { display: block; font-size: calc(var(--tam) * 0.15); line-height: 1.08; text-align: center; overflow: hidden; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }
+  .def-txt .num { display: none; }
+  .celda.def.doble .def-txt { flex: 1 1 50%; display: flex; align-items: center; justify-content: center; }
+  .celda.def.doble .def-txt + .def-txt { border-top: 1px solid var(--vacia); }
+  .def-txt.def-sel { background: var(--actual); }
+  .def-txt.hecha { color: var(--bien); }
+  #tablero.compacto .def-txt { font-size: 0; }
+  #tablero.compacto .def-txt .num { display: inline; font-size: calc(var(--tam) * 0.36); min-width: 0; }
+  .celda.imagen { padding: 0; border: 0; cursor: zoom-in; background: var(--def); }
+  .celda.imagen img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .celda.imagen.def-sel { outline: 3px solid var(--actual); outline-offset: -3px; }
+  #tablero.terminado .celda.letra { cursor: default; }
+  #teclado { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; font-size: 16px; }
+  .acciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; justify-content: center; }
+  .progreso { text-align: center; color: var(--muted); font-size: 0.9rem; }
+  .columnas { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  .columnas > * { min-width: 0; }
+  #lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
+  #lista .pista-item { width: 100%; text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 8px; cursor: pointer; line-height: 1.35; }
+  #lista li.activo .pista-item { background: var(--sel); }
+  #lista li.hecha .pista-item { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--bien); }
+  h2.seccion { font-size: 1.05rem; margin: 18px 0 8px; }
+  .ficha { border-top: 1px solid var(--border); padding: 12px 0; }
+  .ficha h3 { margin: 0 0 4px; font-size: 1.02rem; }
+  .ficha p { margin: 6px 0; }
+  .ficha .resp { color: var(--muted); font-size: 0.88rem; }
+  .ficha .nota { font-size: 0.88rem; background: var(--acento-suave); border-radius: 8px; padding: 6px 8px; }
+  .ficha .mini { margin: 8px 0; display: flex; gap: 10px; align-items: flex-start; }
+  .ficha .mini img { width: 90px; height: auto; border-radius: 6px; }
+  .ficha .mini figcaption { font-size: 0.85rem; color: var(--muted); }
+  .aviso { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+           padding: 10px 16px; border-radius: 10px; max-width: calc(100% - 32px); z-index: 20; box-shadow: var(--sombra); }
+  dialog#visor { border: 0; border-radius: 14px; padding: 12px; max-width: min(92vw, 720px); background: var(--card); color: var(--text); }
+  dialog#visor::backdrop { background: rgba(0,0,0,0.6); }
+  dialog#visor img { max-width: 100%; max-height: 70vh; display: block; margin: 0 auto; }
+  dialog#visor p { font-size: 0.9rem; color: var(--muted); margin: 8px 0; }
+  details.creditos { margin-top: 24px; font-size: 0.9rem; }
+  details.creditos summary { cursor: pointer; font-weight: 600; }
+  .tabla { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  @media (min-width: 900px) {
+    .columnas.juego { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+    .columnas.juego aside { max-height: 80vh; overflow-y: auto; position: sticky; top: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="envoltura">
+  <header class="cab">
+    <h1>Autodefinido de Historia de España</h1>
+    <a href="../">← Para estudiar</a>
+  </header>
+
+  <!-- ================= INICIO ================= -->
+  <section id="inicio" hidden>
+    <div class="tarjeta" id="opciones">
+      <div class="campo">
+        <span class="etq-campo">Periodo del vocabulario</span>
+        <div class="fila">
+          <label>Desde <select id="desde"></select></label>
+          <label>hasta <select id="hasta"></select></label>
+        </div>
+        <p class="ayuda">Los periodos son las hojas del Excel de vocabulario. Entre paréntesis, cuántos términos tiene cada una.</p>
+        <p class="ayuda" id="resumen-rango"></p>
+      </div>
+      <div class="campo">
+        <span class="etq-campo">Dificultad</span>
+        <div class="segmentos" id="niveles"></div>
+        <p class="ayuda" id="nivel-texto"></p>
+      </div>
+      <div class="campo">
+        <label for="tamano">Tamaño del tablero</label>
+        <select id="tamano"></select>
+        <p class="ayuda">Las palabras más largas que el tablero no aparecen. Algunos términos muy largos (de 16 letras o más) solo caben en el de 20 × 20.</p>
+      </div>
+      <div class="campo">
+        <label class="check"><input type="checkbox" id="con-imagenes"> Incluir una imagen como pista (cuadros y retratos hasta 1876)</label>
+      </div>
+      <div class="fila">
+        <button class="boton principal" id="b-crear" type="button">Crear autodefinido</button>
+        <button class="boton" id="b-continuar" type="button" hidden>Seguir con la partida guardada</button>
+      </div>
+    </div>
+
+    <details class="tarjeta" style="margin-top:16px">
+      <summary><b>Cómo se juega</b></summary>
+      <p>Cada casilla de color contiene una definición. La flecha de la primera letra indica hacia dónde va la respuesta:</p>
+      <ul>
+        <li><b>▸</b> la definición está a la izquierda y la palabra va hacia la derecha.</li>
+        <li><b>▾</b> la definición está encima y la palabra va hacia abajo.</li>
+        <li><b>↳</b> la definición está encima y la palabra va hacia la derecha.</li>
+        <li><b>↴</b> la definición está a la izquierda y la palabra va hacia abajo.</li>
+      </ul>
+      <p>Se escribe sin tildes ni espacios; la Ñ cuenta como una sola letra. «…» en una pista indica el hueco de la respuesta (por ejemplo, «Pacto de … (1867)» → OSTENDE).</p>
+      <p>Toca una casilla para seleccionar la palabra; vuelve a tocarla para cambiar entre horizontal y vertical. Con teclado: flechas para moverte, Intro para pasar a la siguiente definición.</p>
+      <p>Si la pantalla es pequeña, las casillas de definición solo muestran el número. La pista completa aparece arriba y en la lista.</p>
+      <p>Al terminar verás la definición y el contexto completos de cada término, tal como están en el Excel.</p>
+    </details>
+  </section>
+
+  <!-- ================= JUEGO ================= -->
+  <section id="juego" hidden>
+    <div class="barra-juego">
+      <h2 id="j-titulo"></h2>
+      <div class="estado"><span id="progreso"></span><span>⏱ <span id="reloj">0:00</span></span></div>
+    </div>
+    <div class="columnas juego">
+      <div>
+        <div class="pista-activa" id="pista-activa" aria-live="polite"></div>
+        <div class="marco-tablero"><div id="tablero"></div></div>
+        <input id="teclado" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-label="Escribir letra" enterkeyhint="next">
+        <div class="acciones">
+          <button class="boton" id="b-letra" type="button">Dame una letra</button>
+          <button class="boton" id="b-comprobar" type="button">Comprobar</button>
+          <button class="boton" id="b-solucion" type="button">Ver solución</button>
+          <button class="boton" id="b-nuevo" type="button">Nuevo autodefinido</button>
+        </div>
+      </div>
+      <aside>
+        <h2 class="seccion" style="margin-top:0">Definiciones</h2>
+        <ol id="lista"></ol>
+      </aside>
+    </div>
+
+    <section id="repaso" hidden>
+      <h2 class="seccion">Repaso: definiciones y contexto del Excel</h2>
+      <div id="repaso-lista"></div>
+      <div class="acciones"><button class="boton principal" id="b-otro" type="button">Hacer otro</button></div>
+    </section>
+  </section>
+
+  <details class="creditos tarjeta">
+    <summary>Fuentes y créditos</summary>
+    <p><b>Vocabulario:</b> Excel «Vocabulario Historia de España» (definición y contexto de cada término).
+       Las pistas del juego son resúmenes de esos textos. Cambios respecto al Excel: se quitan los números de página
+       que acompañaban a algunos términos, las respuestas se escriben sin tildes ni espacios, y en «Referéndum» se ha
+       corregido «abstención del 67,1 %» por «participación del 67,1 %» (pendiente de contrastar).
+       «Estado confesional» (hoja «Hasta 1833») no aparece porque no tiene definición; «23F», porque lleva números.</p>
+    <p><b>Imágenes:</b> tomadas del proyecto
+       <a href="https://github.com/Vidal3375/aprender-historia-de-espanya" target="_blank" rel="noopener">aprender-historia-de-espanya</a>,
+       que las obtuvo de Wikimedia Commons tras comprobar la licencia en la ficha de cada archivo. Se usan sin cambios.
+       La relación entre cada imagen y su término sale del Excel, salvo donde se indica.</p>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Obra</th><th>Autor, fecha y lugar</th><th>Licencia</th><th>Término y fuente de la relación</th></tr></thead>
+        <tbody id="creditos-imagenes"></tbody>
+      </table>
+    </div>
+    <p>La partida y las opciones se guardan solo en este navegador.</p>
+  </details>
+</div>
+
+<dialog id="visor">
+  <img id="visor-img" alt="">
+  <p id="visor-pie"></p>
+  <button class="boton" id="visor-cerrar" type="button">Cerrar</button>
+</dialog>
+<div class="aviso" id="aviso" role="status" hidden></div>
+
+<script src="datos/vocabulario.js"></script>
+<script src="generador.js"></script>
+<script src="juego.js"></script>
+</body>
+</html>

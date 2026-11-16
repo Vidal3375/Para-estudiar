@@ -21,7 +21,7 @@ Los ajustes y el historial se guardan solo en el navegador (`localStorage`); no 
 3. Elige la rama `master` y la carpeta `/ (root)`, y pulsa **Save**.
 
 Al cabo de un par de minutos estará en `https://vidal3375.github.io/Para-estudiar/`
-(la raíz redirige a `pomodoro/`).
+(la raíz es un menú con las herramientas).
 
 ### Probarlo en local
 
@@ -32,6 +32,34 @@ python3 -m http.server 8000
 ```
 
 y abrir `http://localhost:8000/pomodoro/`.
+
+## Autodefinido de Historia de España
+
+Autodefinido con el vocabulario del Excel «Vocabulario Historia de España».
+
+- App: [`autodefinido/`](autodefinido/)
+- **Periodo:** se elige por las hojas del Excel (Hasta 1833, 1833-1876, 1876-1931, 1931-1939, 1939-1975, 1975-1986).
+- **Dificultad:**
+  - Fácil: la primera letra viene puesta y los fallos se marcan al momento.
+  - Normal: pistas sacadas de la definición.
+  - Difícil: pistas sacadas del contexto.
+  - Muy difícil: tablero grande, pistas del contexto, imágenes sin pie y 1 sola letra de ayuda.
+- **Tamaño del tablero:** de 9 × 9 a 20 × 20.
+- **Imágenes como pista:** cuadros y retratos de Wikimedia Commons tomados del proyecto
+  [aprender-historia-de-espanya](https://github.com/Vidal3375/aprender-historia-de-espanya). Solo los hay para el periodo hasta 1876.
+- Al terminar se muestran la definición y el contexto completos de cada término.
+
+Los datos están en [`autodefinido/datos/vocabulario.js`](autodefinido/datos/vocabulario.js) y se pueden editar a mano.
+Cada término lleva la respuesta, una pista corta (resumen de la definición), una pista difícil (resumen del contexto)
+y los textos completos del Excel.
+
+Cambios respecto al Excel:
+
+- Se quitan los números de página de algunos términos.
+- Se quitan las filas de cabecera.
+- En «Referéndum» pone «participación del 67,1 %» en lugar de «abstención del 67,1 %». Está pendiente de contrastar.
+- «Estado confesional» (hoja «Hasta 1833») no sale porque no tiene definición.
+- «23F» no sale porque lleva números.
 
 ## Licencias
 
