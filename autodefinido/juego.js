@@ -488,9 +488,22 @@
     guardar();
   }
 
+  // Confirmación dentro de la página (las ventanas confirm() pueden estar bloqueadas):
+  // el primer toque pide confirmar y el segundo, en menos de 5 s, muestra la solución.
+  var confirmaSolucion = null;
   function solucion() {
     if (partida.terminada) return;
-    if (!confirm("¿Ver la solución? La partida terminará.")) return;
+    var b = $("#b-solucion");
+    if (!confirmaSolucion) {
+      b.textContent = "¿Seguro? Pulsa otra vez";
+      b.classList.add("aviso-boton");
+      confirmaSolucion = setTimeout(function () {
+        confirmaSolucion = null; b.textContent = "Ver solución"; b.classList.remove("aviso-boton");
+      }, 5000);
+      return;
+    }
+    clearTimeout(confirmaSolucion); confirmaSolucion = null;
+    b.textContent = "Ver solución"; b.classList.remove("aviso-boton");
     partida.celdas.forEach(function (x) { if (x.k === "L" && x.v !== x.s) { x.v = x.s; x.revelada = true; } });
     terminar(true);
   }
